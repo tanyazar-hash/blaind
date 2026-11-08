@@ -24,131 +24,167 @@ const arrival = document.querySelector('.object-arrival');
 const ring = document.querySelector('.landing-ring');
 const caption = document.querySelector('.object-caption');
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
-const finePointer = matchMedia('(pointer: fine)');
-const mix = (a, b, t) => a + (b - a) * t;
-let stops = [], model = null, tossStart = null, touchdown = false;
-let frame = 0, lastTime = 0, pointerX = 0, pointerY = 0, tiltX = 0, tiltY = 0;
+const keys = ['x', 'y', 's', 'rx', 'ry', 'rz'];
+let chapters = [], activeChapter = -1, current = null, velocity = {};
+let model = null, lastDrawnPose = null, dropStart = null, dropElapsed = 0, touchdown = false;
+let frame = 0, lastTime = 0;
 
-function layout() {
+// Chapters select fixed viewport poses. Scroll never scrubs the model's transform.
+function layout(snap = false) {
   const mobile = innerWidth <= 600, w = innerWidth, h = innerHeight;
-  const about = document.querySelector('#about');
-  const experience = document.querySelector('#experience');
-  const events = document.querySelector('#events');
-  const contact = document.querySelector('#contact');
+  const ids = ['top', 'about', 'experience', 'events', 'contact'];
+  const sections = ids.map(id => document.getElementById(id));
   const space = document.querySelector('.final-object-space');
-  // The compact contact section can be shorter than the viewport.
-  // Its final pose must be reachable at the actual bottom of the page.
-  const finalScroll = Math.min(contact.offsetTop, document.documentElement.scrollHeight - h);
+  const bottom = Math.max(0, document.documentElement.scrollHeight - h);
+  const finalScroll = Math.min(sections[4].offsetTop, bottom);
   const finalY = space.getBoundingClientRect().top + scrollY + space.offsetHeight / 2 - finalScroll;
-  stops = [
-    {scroll:0, x:w*(mobile ? .60 : .73), y:mobile ? 230 : h*.49, s:1, rx:20, ry:-28, rz:-21},
-    {scroll:about.offsetTop, x:w*(mobile ? .5 : .73), y:mobile ? 660 : h*.5, s:mobile ? .9 : .82, rx:38, ry:155, rz:16},
-    {scroll:experience.offsetTop, x:w*(mobile ? .5 : .26), y:mobile ? 480 : h*.43, s:mobile ? .75 : .85, rx:64, ry:260, rz:-14},
-    {scroll:events.offsetTop, x:w*(mobile ? .58 : .78), y:mobile ? 175 : h*.5, s:.66, rx:30, ry:435, rz:20},
-    {scroll:finalScroll, x:w*.5, y:finalY, s:mobile ? .70 : .50, rx:0, ry:720, rz:0}
+  const poses = [
+    {x:w*(mobile ? .60 : .73), y:mobile ? 230 : h*.49, s:1, rx:18, ry:-24, rz:-16},
+    {x:w*(mobile ? .5 : .73), y:mobile ? 650 : h*.48, s:mobile ? .88 : .82, rx:30, ry:-154, rz:10},
+    {x:w*(mobile ? .5 : .26), y:mobile ? 470 : h*.42, s:mobile ? .72 : .82, rx:48, ry:-264, rz:-8},
+    {x:w*(mobile ? .58 : .78), y:mobile ? 175 : h*.48, s:.66, rx:-12, ry:-330, rz:10},
+    {x:w*.5, y:finalY, s:mobile ? .70 : .50, rx:0, ry:-360, rz:0}
   ];
+  chapters = sections.map((section, i) => ({
+    enter:i === 0 ? 0 : Math.max(0, Math.min(section.offsetTop - h*.30, bottom - 32)),
+    pose:poses[i]
+  }));
+  if (snap) { current = null; activeChapter = -1; }
   model?.resize();
   requestFrame();
+}
+
+function selectChapter() {
+  if (activeChapter === -1) {
+    activeChapter = 0;
+    while (activeChapter < chapters.length - 1 && scrollY >= chapters[activeChapter + 1].enter) activeChapter++;
+  } else {
+    // A small dead band prevents repeated transitions around a section boundary.
+    while (activeChapter < chapters.length - 1 && scrollY >= chapters[activeChapter + 1].enter + 20) activeChapter++;
+    while (activeChapter > 0 && scrollY < chapters[activeChapter].enter - 48) activeChapter--;
+  }
+  return chapters[activeChapter].pose;
 }
 
 function requestFrame() {
   if (!frame) frame = requestAnimationFrame(render);
 }
 
+// An analytic critically damped spring preserves velocity when a user reverses
+// direction. It eases into each pose, then stops requesting animation frames.
+function advance(target, dt) {
+  let moving = false;
+  const omega = 3.6;
+  const decay = Math.exp(-omega * dt);
+  for (const key of keys) {
+    const tolerance = key === 's' ? .00004 : .015;
+    const delta = current[key] - target[key];
+    const impulse = (velocity[key] + omega * delta) * dt;
+    current[key] = target[key] + (delta + impulse) * decay;
+    velocity[key] = (velocity[key] - omega * impulse) * decay;
+    if (Math.abs(current[key] - target[key]) < tolerance && Math.abs(velocity[key]) < tolerance * omega) {
+      current[key] = target[key];
+      velocity[key] = 0;
+    } else moving = true;
+  }
+  return moving;
+}
+
 function render(time) {
   frame = 0;
-  const dt = Math.min(64, time - (lastTime || time - 16));
+  const dt = Math.max(.001, Math.min(.064, (time - (lastTime || time - 16)) / 1000));
   lastTime = time;
-  const damping = 1 - Math.exp(-dt / 150);
-  tiltX += (pointerX - tiltX) * damping;
-  tiltY += (pointerY - tiltY) * damping;
-  let index = 0;
-  while (index < stops.length - 2 && scrollY > stops[index + 1].scroll) index++;
-  const a = stops[index], b = stops[index + 1];
-  const raw = Math.max(0, Math.min(1, (scrollY - a.scroll) / (b.scroll - a.scroll)));
-  // Hold each pose for most of its chapter. Travel only near the next chapter.
-  const travel = Math.max(0, Math.min(1, (raw - .60) / .34));
-  const t = travel * travel * (3 - 2 * travel);
-  const tail = Math.max(0, scrollY - stops.at(-1).scroll);
-  position.style.left = mix(a.x, b.x, t) + 'px';
-  position.style.top = (mix(a.y, b.y, t) - tail) + 'px';
-  position.style.transform = 'translate(-50%,-50%) scale(' + mix(a.s, b.s, t) + ')';
-  const pointer = !motion.matches && finePointer.matches && innerWidth > 600 && tossStart === null ? 1 : 0;
-  const pose = motion.matches
-    ? {rx:12, ry:-15, rz:-8}
-    : {rx:mix(a.rx,b.rx,t) + tiltY*pointer, ry:mix(a.ry,b.ry,t) + tiltX*pointer, rz:mix(a.rz,b.rz,t)};
+  const target = {...selectChapter()};
+  // Jumping several chapters uses the shortest turn, including on the way back.
+  if (current && !motion.matches) {
+    for (const key of ['rx', 'ry', 'rz']) {
+      const turn = ((target[key] - current[key] + 180) % 360 + 360) % 360 - 180;
+      target[key] = current[key] + turn;
+    }
+  }
+  if (!current || motion.matches) {
+    current = {...target};
+    velocity = Object.fromEntries(keys.map(key => [key, 0]));
+  }
+  const moving = !motion.matches && advance(target, dt);
+  position.style.transform = 'translate3d(' + current.x.toFixed(3) + 'px,' + current.y.toFixed(3) + 'px,0) translate(-50%,-50%) scale(' + current.s.toFixed(5) + ')';
+  const pose = motion.matches ? {rx:12, ry:-15, rz:-8} : {rx:current.rx, ry:current.ry, rz:current.rz};
   let lift = 0;
-  if (tossStart !== null) {
-    const p = Math.min(1, (time - tossStart) / 2600);
-    if (p < .84) {
-      const q = p / .84;
-      // A ballistic arc: enter from below, rise, flip three times, then fall.
-      lift = Math.min(innerHeight, 800) * (1.856*q*q - 2.556*q + .7);
-      pose.rx += 1080 * (1 - q);
-      pose.ry += 12 * Math.sin(Math.PI*q);
-      pose.rz += 18 * (1 - q);
+  if (dropStart !== null) {
+    dropElapsed += dt;
+    const p = Math.min(1, dropElapsed / 2);
+    if (p < .62) {
+      const q = p / .62;
+      const height = chapters[0].pose.y + position.offsetWidth * .75 + 40;
+      // Enter entirely above the viewport and accelerate downward.
+      lift = -height * (1 - q*q);
+      pose.rx += 28 * (1 - q);
+      pose.ry += 36 * (1 - q);
+      pose.rz -= 18 * (1 - q);
     } else {
-      const settle = (p - .84) / .16;
-      lift = -22 * Math.sin(Math.PI*settle) * (1-settle);
-      pose.rx += 10 * Math.sin(Math.PI*2*settle) * (1-settle);
+      const settle = (p - .62) / .38;
+      lift = -24 * Math.sin(Math.PI * settle) * (1-settle);
+      pose.rx += 7 * Math.sin(Math.PI*3*settle) * (1-settle);
+      pose.rz += 3 * Math.sin(Math.PI*2*settle) * (1-settle);
       if (!touchdown) {
         touchdown = true;
-        ring.animate([{opacity:0,scale:'.65'},{opacity:.65,scale:'1.04'},{opacity:0,scale:'1.2'}],{duration:850});
+        ring.animate([{opacity:0,scale:'.7'},{opacity:.45,scale:'1.03'},{opacity:0,scale:'1.16'}],{duration:950});
       }
     }
     if (p === 1) {
-      tossStart = null;
+      dropStart = null;
       arrival.dataset.state = 'ready';
-    } else requestFrame();
+    }
   }
-  arrival.style.transform = 'translateY(' + lift + 'px)';
-  model?.draw(pose);
-  caption.style.opacity = model && tossStart === null ? String(Math.max(0,1-scrollY/300)) : '0';
-  if (Math.abs(pointerX-tiltX) + Math.abs(pointerY-tiltY) > .01) requestFrame();
+  arrival.style.transform = 'translate3d(0,' + lift.toFixed(3) + 'px,0)';
+  // Translation is handled by the compositor. An unchanged pose needs no WebGL redraw.
+  if (model && (!lastDrawnPose || ['rx','ry','rz'].some(key => Math.abs(pose[key] - lastDrawnPose[key]) > .001))) {
+    model.draw(pose);
+    lastDrawnPose = {...pose};
+  }
+  caption.style.opacity = model && dropStart === null && activeChapter === 0 ? String(Math.max(0,1-scrollY/300)) : '0';
+  if (moving || dropStart !== null) requestFrame();
 }
 
-window.addEventListener('pointermove', e => {
-  if (!finePointer.matches || motion.matches || innerWidth <= 600) return;
-  pointerX = (e.clientX/innerWidth-.5)*9;
-  pointerY = -(e.clientY/innerHeight-.5)*9;
-  requestFrame();
-}, {passive:true});
-
-function finishToss() {
-  if (tossStart !== null) {
-    tossStart = null;
-    arrival.dataset.state = 'ready';
-    ring.getAnimations().forEach(animation => animation.cancel());
-  }
-}
-
-window.addEventListener('scroll', () => {
-  if (scrollY > 40) finishToss();
-  requestFrame();
-}, {passive:true});
+window.addEventListener('scroll', requestFrame, {passive:true});
 window.addEventListener('resize', () => { layout(); closeMenu(); });
-window.addEventListener('pageshow', layout);
-motion.addEventListener('change', () => { if (motion.matches) finishToss(); requestFrame(); });
+window.addEventListener('pageshow', event => layout(event.persisted));
+document.addEventListener('visibilitychange', () => { lastTime = 0; if (!document.hidden) requestFrame(); });
+motion.addEventListener('change', () => {
+  if (motion.matches) {
+    dropStart = null;
+    ring.getAnimations().forEach(animation => animation.cancel());
+    if (model) arrival.dataset.state = 'ready';
+  }
+  requestFrame();
+});
 layout();
-document.fonts.ready.then(layout);
+document.fonts.ready.then(() => layout());
 
 function showFallback() {
   model = null;
-  tossStart = null;
+  dropStart = null;
   arrival.classList.remove('model-loaded');
   arrival.classList.add('fallback-visible');
   arrival.dataset.state = 'fallback';
   requestFrame();
 }
 
-// The first coin a visitor sees is the actual GLB, never an interim CSS drawing.
+// Only the original GLB appears during a successful load.
 import('./model.js').then(async ({createChip}) => {
   model = await createChip(arrival, showFallback);
+  lastDrawnPose = null;
   if (!motion.matches && scrollY < 40) {
-    tossStart = performance.now();
-    arrival.dataset.state = 'tossing';
+    dropStart = performance.now();
+    dropElapsed = 0;
+    lastTime = dropStart;
+    arrival.dataset.state = 'falling';
   } else arrival.dataset.state = 'ready';
-  requestFrame();
+  // Position and shade the first frame before revealing the WebGL canvas.
+  // Otherwise a cached load can flash the chip at rest before its fall starts.
+  if (frame) cancelAnimationFrame(frame);
+  render(performance.now());
+  arrival.classList.add('model-loaded');
 }).catch(error => {
   console.warn('3D unavailable; showing the club logo.', error);
   showFallback();

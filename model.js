@@ -85,6 +85,5 @@ export async function createChip(container, onContextLost) {
   });
   container.append(canvas);
   resize();
-  container.classList.add('model-loaded');
   return { draw, resize };
 }

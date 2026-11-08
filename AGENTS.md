@@ -10,4 +10,6 @@
 - A successful Git push is not proof of a successful Vercel deployment. Check deployment status or the served files when access is available, and report verification limits plainly.
 - Vercel authorization and network access are needed to change Vercel project settings; do not request tokens in chat.
 
-- Use the Cyrillic name «Блаинд» and assets/club-logo.svg consistently. Keep the compact contact section, scroll pose holds, and post-load coin-toss entrance. Respect reduced motion and restored scroll position.
+- Use the Cyrillic name «Блаинд» and assets/club-logo.svg consistently. Keep the compact contact section, fixed chapter poses, and post-load fall from above. Respect reduced motion and restored scroll position.
+
+- Chapter changes trigger smooth time-based transitions; never bind the chip transform directly to scroll progress or cursor movement. Keep it still once each transition settles.

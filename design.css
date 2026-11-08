@@ -66,19 +66,19 @@ footer .brand img{width:112px;height:56px}
 .reveal.visible{opacity:1;transform:translateY(0)}
 /* Nothing substitutes for the GLB while it downloads. A logo is shown only on failure. */
 .object-scene{position:fixed;inset:0;pointer-events:none;z-index:2;overflow:hidden}
-.object-position{position:absolute;left:73%;top:49%;width:clamp(260px,30vw,480px);aspect-ratio:1;transform:translate(-50%,-50%);will-change:transform,left,top}
+.object-position{position:absolute;left:0;top:0;width:clamp(260px,30vw,480px);aspect-ratio:1;transform:translate3d(73vw,49vh,0) translate(-50%,-50%);will-change:transform}
 .object-arrival{width:100%;height:100%;position:relative}
 .model-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;visibility:hidden}
 .model-loaded .model-canvas{visibility:visible}
 .chip-fallback{position:absolute;left:15%;top:30%;width:70%;height:40%;object-fit:contain;visibility:hidden}
 .fallback-visible .chip-fallback{visibility:visible}
 .landing-ring{position:absolute;left:-15%;right:-15%;bottom:-16%;height:16%;border:1px solid #b99a652b;border-radius:50%;opacity:0}
-.object-caption{position:absolute;top:125%;width:100%;text-align:center;font-size:8px;letter-spacing:.2em;color:#8b8474;opacity:0}
+.object-caption{transition:opacity .45s;position:absolute;top:125%;width:100%;text-align:center;font-size:8px;letter-spacing:.2em;color:#8b8474;opacity:0}
 @media(max-width:900px){
   header nav{gap:20px}
   .hero{padding-left:7%;padding-right:7%}
   .hero-content{width:68%}
-  .object-position{width:34vw;left:76%}
+  .object-position{width:34vw}
   .features{gap:25px}
   #events{padding-right:38%}
   .event h3{font-size:20px}
@@ -99,7 +99,7 @@ footer .brand img{width:112px;height:56px}
   .btn{padding:17px 19px}
   .hero-index,.hero-scroll{bottom:28px;font-size:7px}
   .hero-scroll:before{width:20px}
-  .object-position{width:240px;top:230px;left:60%}
+  .object-position{width:240px}
   .object-caption{font-size:6px;top:119%}
   section:not(.hero){padding:90px 7%}
   .section-title{font-size:50px}
@@ -129,3 +129,7 @@ footer .brand img{width:112px;height:56px}
 
 .arrow-icon{display:inline-block;position:relative;width:8px;height:8px;border-top:1px solid currentColor;border-right:1px solid currentColor;flex-shrink:0}
 .arrow-icon:before{content:"";position:absolute;right:-1px;top:-1px;width:10px;height:1px;background:currentColor;transform-origin:right center;transform:rotate(-45deg)}
+
+
+/* A quiet edge vignette, with a clear center and no grain. */
+body:after{content:"";position:fixed;inset:0;z-index:9;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 48%,rgba(0,0,0,.16) 100%)}
