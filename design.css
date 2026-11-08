@@ -132,7 +132,7 @@ footer .brand img{width:112px;height:56px}
 
 
 /* Stronger edge shading preserves a clear, open center. */
-body:after{content:"";position:fixed;inset:0;z-index:9;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 32%,rgba(0,0,0,.10) 66%,rgba(0,0,0,.40) 100%)}
+body:after{content:"";position:fixed;inset:0;z-index:9;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 22%,rgba(0,0,0,.28) 64%,rgba(0,0,0,.78) 100%)}
 
 @media(max-width:600px){
   /* The copy passes in front of the parked model, instead of sharing its pixels. */

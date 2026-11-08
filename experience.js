@@ -74,7 +74,7 @@ function requestFrame() {
 // direction. It eases into each pose, then stops requesting animation frames.
 function advance(target, dt) {
   let moving = false;
-  const omega = 6.4;
+  const omega = 7.6;
   const decay = Math.exp(-omega * dt);
   for (const key of keys) {
     const tolerance = key === 's' ? .00004 : .015;
@@ -113,21 +113,21 @@ function render(time) {
   if (dropStart !== null) {
     dropElapsed += dt;
     let impact = -1;
-    if (dropElapsed < .72) {
-      const q = dropElapsed / .72;
+    if (dropElapsed < .60) {
+      const q = dropElapsed / .60;
       const height = chapters[0].pose.y + position.offsetWidth * .75 + 40;
       lift = -height * (1 - q*q);
-      pose.rx += 28 * (1 - q);
+      pose.rx += 360 * q + 28 * (1 - q);
       pose.ry += 36 * (1 - q);
       pose.rz -= 18 * (1 - q);
     } else {
       // Three shorter ballistic rebounds, each returning to the same table plane.
       const rebounds = [
-        {duration:.40, height:56, rock:12},
-        {duration:.28, height:25, rock:7},
-        {duration:.19, height:9, rock:3}
+        {duration:.36, height:56, rock:12},
+        {duration:.25, height:25, rock:7},
+        {duration:.17, height:9, rock:3}
       ];
-      let remaining = dropElapsed - .72;
+      let remaining = dropElapsed - .60;
       let bouncing = false;
       impact = 0;
       for (let i = 0; i < rebounds.length; i++) {
@@ -135,7 +135,8 @@ function render(time) {
         if (remaining < bounce.duration) {
           const q = remaining / bounce.duration;
           lift = -4 * bounce.height * q * (1-q);
-          pose.rx += bounce.rock * Math.sin(Math.PI*q);
+          // Continue the first airborne turn with a full flip on the first rebound.
+          pose.rx += (i === 0 ? 360 + 360*q : 720) + bounce.rock * Math.sin(Math.PI*q);
           pose.rz += bounce.rock * .4 * Math.sin(Math.PI*2*q);
           impact = i;
           bouncing = true;
@@ -145,8 +146,8 @@ function render(time) {
         impact = i+1;
       }
       if (!bouncing) {
-        const settle = Math.min(1, remaining / .18);
-        pose.rx += 2 * Math.sin(Math.PI*2*settle) * (1-settle);
+        const settle = Math.min(1, remaining / .15);
+        pose.rx += 720 + 2 * Math.sin(Math.PI*2*settle) * (1-settle);
         if (settle === 1) {
           dropStart = null;
           arrival.dataset.state = 'ready';
