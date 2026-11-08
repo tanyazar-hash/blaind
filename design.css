@@ -72,7 +72,7 @@ footer .brand img{width:112px;height:56px}
 .model-loaded .model-canvas{visibility:visible}
 .chip-fallback{position:absolute;left:15%;top:30%;width:70%;height:40%;object-fit:contain;visibility:hidden}
 .fallback-visible .chip-fallback{visibility:visible}
-.landing-ring{position:absolute;left:-15%;right:-15%;bottom:-16%;height:16%;border:1px solid #b99a652b;border-radius:50%;opacity:0}
+.landing-ring{position:absolute;left:-8%;right:-8%;bottom:-2%;height:10%;border:1px solid #b99a652b;border-radius:50%;opacity:0}
 .object-caption{transition:opacity .45s;position:absolute;top:125%;width:100%;text-align:center;font-size:8px;letter-spacing:.2em;color:#8b8474;opacity:0}
 @media(max-width:900px){
   header nav{gap:20px}
@@ -131,5 +131,11 @@ footer .brand img{width:112px;height:56px}
 .arrow-icon:before{content:"";position:absolute;right:-1px;top:-1px;width:10px;height:1px;background:currentColor;transform-origin:right center;transform:rotate(-45deg)}
 
 
-/* A quiet edge vignette, with a clear center and no grain. */
-body:after{content:"";position:fixed;inset:0;z-index:9;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 48%,rgba(0,0,0,.16) 100%)}
+/* Stronger edge shading preserves a clear, open center. */
+body:after{content:"";position:fixed;inset:0;z-index:9;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 32%,rgba(0,0,0,.10) 66%,rgba(0,0,0,.40) 100%)}
+
+@media(max-width:600px){
+  /* The copy passes in front of the parked model, instead of sharing its pixels. */
+  .features{position:relative;z-index:3;background:var(--bg)}
+  .features:before{content:"";position:absolute;left:0;right:0;bottom:100%;height:64px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
+}

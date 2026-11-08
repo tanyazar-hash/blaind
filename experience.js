@@ -26,7 +26,7 @@ const caption = document.querySelector('.object-caption');
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const keys = ['x', 'y', 's', 'rx', 'ry', 'rz'];
 let chapters = [], activeChapter = -1, current = null, velocity = {};
-let model = null, lastDrawnPose = null, dropStart = null, dropElapsed = 0, touchdown = false;
+let model = null, lastDrawnPose = null, dropStart = null, dropElapsed = 0, impactIndex = -1;
 let frame = 0, lastTime = 0;
 
 // Chapters select fixed viewport poses. Scroll never scrubs the model's transform.
@@ -41,7 +41,7 @@ function layout(snap = false) {
   const poses = [
     {x:w*(mobile ? .60 : .73), y:mobile ? 230 : h*.49, s:1, rx:18, ry:-24, rz:-16},
     {x:w*(mobile ? .5 : .73), y:mobile ? 650 : h*.48, s:mobile ? .88 : .82, rx:30, ry:-154, rz:10},
-    {x:w*(mobile ? .5 : .26), y:mobile ? 470 : h*.42, s:mobile ? .72 : .82, rx:48, ry:-264, rz:-8},
+    {x:w*(mobile ? .5 : .26), y:mobile ? 470 : h*.42, s:mobile ? .72 : .82, rx:22, ry:-214, rz:-14},
     {x:w*(mobile ? .58 : .78), y:mobile ? 175 : h*.48, s:.66, rx:-12, ry:-330, rz:10},
     {x:w*.5, y:finalY, s:mobile ? .70 : .50, rx:0, ry:-360, rz:0}
   ];
@@ -74,7 +74,7 @@ function requestFrame() {
 // direction. It eases into each pose, then stops requesting animation frames.
 function advance(target, dt) {
   let moving = false;
-  const omega = 3.6;
+  const omega = 6.4;
   const decay = Math.exp(-omega * dt);
   for (const key of keys) {
     const tolerance = key === 's' ? .00004 : .015;
@@ -112,28 +112,55 @@ function render(time) {
   let lift = 0;
   if (dropStart !== null) {
     dropElapsed += dt;
-    const p = Math.min(1, dropElapsed / 2);
-    if (p < .62) {
-      const q = p / .62;
+    let impact = -1;
+    if (dropElapsed < .72) {
+      const q = dropElapsed / .72;
       const height = chapters[0].pose.y + position.offsetWidth * .75 + 40;
-      // Enter entirely above the viewport and accelerate downward.
       lift = -height * (1 - q*q);
       pose.rx += 28 * (1 - q);
       pose.ry += 36 * (1 - q);
       pose.rz -= 18 * (1 - q);
     } else {
-      const settle = (p - .62) / .38;
-      lift = -24 * Math.sin(Math.PI * settle) * (1-settle);
-      pose.rx += 7 * Math.sin(Math.PI*3*settle) * (1-settle);
-      pose.rz += 3 * Math.sin(Math.PI*2*settle) * (1-settle);
-      if (!touchdown) {
-        touchdown = true;
-        ring.animate([{opacity:0,scale:'.7'},{opacity:.45,scale:'1.03'},{opacity:0,scale:'1.16'}],{duration:950});
+      // Three shorter ballistic rebounds, each returning to the same table plane.
+      const rebounds = [
+        {duration:.40, height:56, rock:12},
+        {duration:.28, height:25, rock:7},
+        {duration:.19, height:9, rock:3}
+      ];
+      let remaining = dropElapsed - .72;
+      let bouncing = false;
+      impact = 0;
+      for (let i = 0; i < rebounds.length; i++) {
+        const bounce = rebounds[i];
+        if (remaining < bounce.duration) {
+          const q = remaining / bounce.duration;
+          lift = -4 * bounce.height * q * (1-q);
+          pose.rx += bounce.rock * Math.sin(Math.PI*q);
+          pose.rz += bounce.rock * .4 * Math.sin(Math.PI*2*q);
+          impact = i;
+          bouncing = true;
+          break;
+        }
+        remaining -= bounce.duration;
+        impact = i+1;
+      }
+      if (!bouncing) {
+        const settle = Math.min(1, remaining / .18);
+        pose.rx += 2 * Math.sin(Math.PI*2*settle) * (1-settle);
+        if (settle === 1) {
+          dropStart = null;
+          arrival.dataset.state = 'ready';
+        }
       }
     }
-    if (p === 1) {
-      dropStart = null;
-      arrival.dataset.state = 'ready';
+    if (impact > impactIndex) {
+      impactIndex = impact;
+      ring.getAnimations().forEach(animation => animation.cancel());
+      const strength = [.55, .36, .22, .12][impact];
+      ring.animate([
+        {opacity:strength, transform:'scale(.84)'},
+        {opacity:0, transform:'scale(1.12)'}
+      ],{duration:320-impact*40,easing:'ease-out'});
     }
   }
   arrival.style.transform = 'translate3d(0,' + lift.toFixed(3) + 'px,0)';
@@ -177,6 +204,7 @@ import('./model.js').then(async ({createChip}) => {
   if (!motion.matches && scrollY < 40) {
     dropStart = performance.now();
     dropElapsed = 0;
+    impactIndex = -1;
     lastTime = dropStart;
     arrival.dataset.state = 'falling';
   } else arrival.dataset.state = 'ready';
