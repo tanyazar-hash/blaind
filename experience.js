@@ -40,13 +40,13 @@ function layout(snap = false) {
   const finalY = space.getBoundingClientRect().top + scrollY + space.offsetHeight / 2 - finalScroll;
   const poses = [
     {x:w*(mobile ? .60 : .73), y:mobile ? 230 : h*.49, s:1, rx:18, ry:-24, rz:-16},
-    {x:w*(mobile ? .5 : .73), y:mobile ? 650 : h*.48, s:mobile ? .88 : .82, rx:30, ry:-154, rz:10},
-    {x:w*(mobile ? .5 : .26), y:mobile ? 470 : h*.42, s:mobile ? .72 : .82, rx:22, ry:-214, rz:-14},
-    {x:w*(mobile ? .58 : .78), y:mobile ? 175 : h*.48, s:.66, rx:-12, ry:-330, rz:10},
+    {x:w*(mobile ? .5 : .73), y:mobile ? 600 : h*.42, s:mobile ? .88 : .82, rx:30, ry:-154, rz:10},
+    {x:w*(mobile ? .5 : .26), y:mobile ? 430 : h*.37, s:mobile ? .72 : .82, rx:22, ry:-214, rz:-14},
+    {x:w*(mobile ? .58 : .78), y:mobile ? 175 : h*.43, s:.66, rx:-12, ry:-330, rz:10},
     {x:w*.5, y:finalY, s:mobile ? .70 : .50, rx:0, ry:-360, rz:0}
   ];
   chapters = sections.map((section, i) => ({
-    enter:i === 0 ? 0 : Math.max(0, Math.min(section.offsetTop - h*.30, bottom - 32)),
+    enter:i === 0 ? 0 : Math.max(0, Math.min(section.offsetTop - h*.45, bottom - 32)),
     pose:poses[i]
   }));
   if (snap) { current = null; activeChapter = -1; }

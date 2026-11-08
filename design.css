@@ -17,7 +17,7 @@ nav a:hover{color:var(--gold)}
 .nav-cta{border:1px solid var(--line);padding:14px 22px}
 .menu,.mobile-nav{display:none}
 section{position:relative}
-.hero{min-height:100svh;display:flex;align-items:center;padding:165px 9% 130px;background:radial-gradient(ellipse at 74% 47%,#24251f38,transparent 70%)}
+.hero{min-height:100svh;display:flex;align-items:center;padding:165px 9% 130px;background:transparent}
 .hero-content{position:relative;z-index:3;width:64%}
 .eyebrow{color:var(--gold);text-transform:uppercase;letter-spacing:.3em;font-size:9px;font-weight:700}
 h1{font-size:clamp(72px,8.2vw,132px);line-height:1.02;letter-spacing:-.055em;margin:30px 0}
@@ -30,22 +30,22 @@ h1 em{font-style:normal;color:var(--gold)}
 .hero-index{position:absolute;bottom:34px;left:6.4%;font-size:9px;letter-spacing:.22em;color:#8c877b}
 .hero-scroll{position:absolute;bottom:34px;right:6.4%;font-size:9px;letter-spacing:.22em;color:#a39d90;display:flex;align-items:center;gap:18px}
 .hero-scroll:before{content:"";width:35px;height:1px;background:var(--gold)}
-section:not(.hero){padding:140px 9%;border-top:1px solid #b99a651a}
+section:not(.hero){padding:112px 9%;border-top:1px solid #b99a651a}
 .section-num{font-size:11px;color:var(--gold);letter-spacing:.2em;margin-bottom:35px}
 .section-title{font-size:clamp(48px,5.8vw,88px);letter-spacing:-.045em;line-height:1.13;margin:0 0 35px}
 .section-title em{font-style:italic;color:var(--gold)}
 .section-desc{max-width:410px;color:var(--muted);line-height:2;font-size:13px}
-.about{display:grid;grid-template-columns:1fr 1fr;gap:10%;align-items:center;min-height:100svh}
+.about{display:grid;grid-template-columns:1fr 1fr;gap:10%;align-items:center;min-height:85svh}
 .object-space{height:420px;display:flex;align-items:flex-end;justify-content:center}
 .object-space span{font-size:8px;letter-spacing:.27em;color:#8b8474}
-.experience{min-height:110svh}
+.experience{min-height:92svh}
 .experience>.section-title,.experience>.section-desc,.experience>.section-num{margin-left:49%}
-.features{display:grid;grid-template-columns:repeat(3,1fr);gap:50px;margin-top:160px}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:50px;margin-top:124px}
 .feature{border-top:1px solid var(--line);padding-top:24px}
 .feature b{font-size:11px;letter-spacing:.2em;color:var(--gold)}
 .feature h3{font-size:28px;margin:30px 0 18px}
 .feature p{font-size:12px;color:var(--muted);line-height:1.9;max-width:270px}
-#events{min-height:95svh;padding-right:42%}
+#events{min-height:80svh;padding-right:42%}
 .events-head .section-desc{margin-bottom:56px}
 .event{border-top:1px solid var(--line);display:grid;grid-template-columns:40px 1fr 20px;align-items:center;gap:20px;padding:27px 0}
 .event:last-child{border-bottom:1px solid var(--line)}
@@ -101,16 +101,16 @@ footer .brand img{width:112px;height:56px}
   .hero-scroll:before{width:20px}
   .object-position{width:240px}
   .object-caption{font-size:6px;top:119%}
-  section:not(.hero){padding:90px 7%}
+  section:not(.hero){padding:72px 7%}
   .section-title{font-size:50px}
-  .about{min-height:950px;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:20px}
-  .object-space{height:350px}
-  .experience{min-height:1100px}
+  .about{min-height:820px;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:20px}
+  .object-space{height:280px}
+  .experience{min-height:1000px}
   .experience>.section-title,.experience>.section-desc,.experience>.section-num{margin-left:0}
-  .features{grid-template-columns:1fr;margin-top:330px;gap:30px}
+  .features{grid-template-columns:1fr;margin-top:250px;gap:30px}
   .feature h3{margin:18px 0 12px}
   .feature p{max-width:100%;margin-bottom:0}
-  #events{padding-right:7%;min-height:850px;padding-top:330px}
+  #events{padding-right:7%;min-height:740px;padding-top:280px}
   .events-head .section-desc{margin-bottom:35px}
   .event{grid-template-columns:30px 1fr 20px;gap:12px}
   section.contact{padding:50px 7% 40px;min-height:0}
@@ -131,8 +131,8 @@ footer .brand img{width:112px;height:56px}
 .arrow-icon:before{content:"";position:absolute;right:-1px;top:-1px;width:10px;height:1px;background:currentColor;transform-origin:right center;transform:rotate(-45deg)}
 
 
-/* Stronger edge shading preserves a clear, open center. */
-body:after{content:"";position:fixed;inset:0;z-index:9;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 22%,rgba(0,0,0,.28) 64%,rgba(0,0,0,.78) 100%)}
+/* Static monochrome grain gives the background a lightly aged print texture. */
+body:after{content:"";position:fixed;inset:0;z-index:9;pointer-events:none;background-image:url("assets/grain.svg");background-repeat:repeat;background-size:180px 180px;opacity:.30;mix-blend-mode:soft-light;image-rendering:pixelated}
 
 @media(max-width:600px){
   /* The copy passes in front of the parked model, instead of sharing its pixels. */

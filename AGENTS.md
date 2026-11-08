@@ -13,3 +13,5 @@
 - Use the Cyrillic name «Блаинд» and assets/club-logo.svg consistently. Keep the compact contact section, fixed chapter poses, and post-load fall from above. Respect reduced motion and restored scroll position.
 
 - Chapter changes trigger smooth time-based transitions; never bind the chip transform directly to scroll progress or cursor movement. Keep it still once each transition settles.
+
+- The user means fine monochrome film grain and a slightly aged texture when asking for «виньетка». Use assets/grain.svg; avoid radial pools of light and heavy edge darkening. Keep section spacing compact so fixed chip poses do not linger too long.
