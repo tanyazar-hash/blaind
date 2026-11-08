@@ -15,3 +15,5 @@
 - Chapter changes trigger smooth time-based transitions; never bind the chip transform directly to scroll progress or cursor movement. Keep it still once each transition settles.
 
 - The user means fine monochrome film grain and a slightly aged texture when asking for «виньетка». Use assets/grain.svg; avoid radial pools of light and heavy edge darkening. Keep section spacing compact so fixed chip poses do not linger too long.
+
+- Keep the grain layer below the 3D scene: texture belongs to the background; the chip and its logo must stay sharp and free of grain overlays.

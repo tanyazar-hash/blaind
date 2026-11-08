@@ -131,8 +131,8 @@ footer .brand img{width:112px;height:56px}
 .arrow-icon:before{content:"";position:absolute;right:-1px;top:-1px;width:10px;height:1px;background:currentColor;transform-origin:right center;transform:rotate(-45deg)}
 
 
-/* Static monochrome grain gives the background a lightly aged print texture. */
-body:after{content:"";position:fixed;inset:0;z-index:9;pointer-events:none;background-image:url("assets/grain.svg");background-repeat:repeat;background-size:180px 180px;opacity:.30;mix-blend-mode:soft-light;image-rendering:pixelated}
+/* Background grain stays below the clean 3D scene and foreground content. */
+body:after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;background-image:url("assets/grain.svg");background-repeat:repeat;background-size:180px 180px;opacity:.30;mix-blend-mode:soft-light;image-rendering:pixelated}
 
 @media(max-width:600px){
   /* The copy passes in front of the parked model, instead of sharing its pixels. */
