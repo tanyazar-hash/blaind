@@ -45,23 +45,15 @@ export async function createChip(container, onContextLost) {
   const pivot = new THREE.Group();
   pivot.add(normalized); scene.add(pivot);
 
-  // A transparent in-scene wordmark follows the actual mesh on both faces.
-  const label = document.createElement('canvas');
-  label.width = 1024; label.height = 768;
-  const ctx = label.getContext('2d');
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#cbb47e';
-  ctx.font = '230px Georgia, serif'; ctx.fillText('Λ', 512, 310);
-  ctx.font = '500 110px Arial, sans-serif'; ctx.fillText('BLΛIND', 512, 465);
-  ctx.font = '23px Arial, sans-serif'; ctx.fillText('P R I V A T E   P O K E R   C L U B', 512, 560);
-  const texture = new THREE.CanvasTexture(label);
+  // The same reference-based Cyrillic logo is used in the header and on the GLB.
+  const texture = await new THREE.TextureLoader().loadAsync('./assets/club-logo.svg');
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
   const material = new THREE.MeshStandardMaterial({
     map: texture, transparent: true, alphaTest: .05, roughness: .65, metalness: .25,
     depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1
   });
-  const logo = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.425), material);
+  const logo = new THREE.Mesh(new THREE.PlaneGeometry(2.15, 1.075), material);
   const thickness = size.z * 3.9 / Math.max(size.x, size.y, size.z);
   logo.position.z = thickness / 2 + .012;
   pivot.add(logo);

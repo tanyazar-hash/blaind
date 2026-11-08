@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300">
+  <title>Блаинд — спортивный покер</title>
+  <g fill="#b9a65e">
+    <path d="M300 14c-12 18-39 34-39 53 0 22 25 25 34 9-1 13-5 22-12 28h34c-7-6-11-15-12-28 9 16 34 13 34-9 0-19-27-35-39-53Z"/>
+    <path d="M71 77h164v3H71zm294 0h164v3H365Z" opacity=".8"/>
+    <text x="300" y="206" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="117" textLength="494" lengthAdjust="spacingAndGlyphs">БЛАИНД</text>
+    <path d="M58 225h226v3H58zm258 0h226v3H316Z"/>
+    <path d="m300 216 8 10-8 10-8-10Z"/>
+    <text x="300" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="24" letter-spacing="3">СПОРТИВНЫЙ ПОКЕР</text>
+  </g>
+</svg>
