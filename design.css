@@ -8,3 +8,10 @@ section:not(.hero){padding:140px 9%;border-color:#b99a651a;background:transparen
 @media(max-width:900px){header nav{gap:20px}.hero{padding-left:7%;padding-right:7%}.hero-content{width:65%}.object-position{width:34vw;left:76%}.features{gap:25px;grid-template-columns:repeat(3,1fr)}#events{padding-right:38%}.event h3{font-size:20px}}
 @media(max-width:600px){header{height:80px;padding:0 7%}.menu{background:transparent;cursor:pointer}.mobile-nav{top:80px}.mobile-nav.open{display:flex}.hero{min-height:990px;padding:420px 7% 100px;align-items:flex-start}.hero-content{width:100%}.hero h1{font-size:clamp(77px,22vw,110px);line-height:.89;margin:24px 0}.hero .eyebrow{font-size:8px}.lead{font-size:12px}.actions{gap:20px}.hero-index,.hero-scroll{bottom:28px;font-size:7px}.hero-scroll:before{width:20px}.object-position{width:240px;top:240px;left:60%}.object-caption{font-size:6px;top:119%}.coin-face strong{font-size:26px}.coin-symbol{font-size:58px}.coin-face small{font-size:5px;margin:12px 0}.about{min-height:950px;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:20px}.object-space{height:350px}.experience{min-height:1100px}.experience>.section-title,.experience>.section-desc,.experience>.section-num{margin-left:0}.features{grid-template-columns:1fr;margin-top:330px;gap:30px}.feature h3{margin:18px 0 12px}.feature p{max-width:100%;margin-bottom:0}#events{padding-right:7%;min-height:850px;padding-top:330px}.events-head .section-desc{margin-bottom:35px}.event{grid-template-columns:30px 1fr 20px}.contact{min-height:1000px}.final-object-space{height:320px}.contact .section-title{font-size:51px}footer{position:relative;z-index:3}.section-title{font-size:50px}}
 @media(prefers-reduced-motion:reduce){.object-position,.coin{will-change:auto}.landing-ring{display:none}}
+
+
+/* WebGL owns the visual once the original uploaded GLB has loaded. */
+.model-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .5s}
+.model-loaded .model-canvas{opacity:1}
+.model-loaded .coin{visibility:hidden}
+@media(prefers-reduced-motion:reduce){.model-canvas{transition:none}}

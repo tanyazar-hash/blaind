@@ -28,7 +28,8 @@ const caption = document.querySelector('.object-caption');
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = matchMedia('(pointer: fine)');
 let stops = [], pointerX = 0, pointerY = 0, tiltX = 0, tiltY = 0;
-let frame = 0, lastTime = 0, entrance = null;
+let frame = 0, lastTime = 0, entrance = null, model = null;
+let modelPose = { rx:20, ry:-28, rz:-21 };
 const mix = (a, b, t) => a + (b - a) * t;
 function layout() {
   const mobile = innerWidth <= 600, w = innerWidth, h = innerHeight;
@@ -54,6 +55,7 @@ function layout() {
     {scroll:events.offsetTop,x:w*(mobile?.58:.78),y:mobile?175:h*.5,s:.66,rx:30,ry:435,rz:20},
     {scroll:contact.offsetTop,x:w*.5,y:finalY,s:mobile?.78:.60,rx:0,ry:720,rz:0}
   ];
+  model?.resize();
   closeMenu();
   requestFrame();
 }
@@ -74,9 +76,11 @@ function render(time) {
   position.style.left = x + 'px'; position.style.top = y + 'px';
   position.style.transform = 'translate(-50%,-50%) scale(' + mix(a.s,b.s,t) + ')';
   const pointer = !motion.matches && finePointer.matches && innerWidth > 600 ? 1 : 0;
-  if (motion.matches) {
-    coin.style.transform = 'rotateX(12deg) rotateY(-15deg) rotateZ(-8deg)';
-  } else coin.style.transform = 'rotateX(' + (mix(a.rx,b.rx,t) + tiltY*pointer) + 'deg) rotateY(' + (mix(a.ry,b.ry,t) + tiltX*pointer) + 'deg) rotateZ(' + mix(a.rz,b.rz,t) + 'deg)';
+  modelPose = motion.matches
+    ? { rx:12, ry:-15, rz:-8 }
+    : { rx:mix(a.rx,b.rx,t) + tiltY*pointer, ry:mix(a.ry,b.ry,t) + tiltX*pointer, rz:mix(a.rz,b.rz,t) };
+  coin.style.transform = 'rotateX(' + modelPose.rx + 'deg) rotateY(' + modelPose.ry + 'deg) rotateZ(' + modelPose.rz + 'deg)';
+  model?.draw(modelPose);
   caption.style.opacity = String(Math.max(0,1-scrollY/300));
   ring.style.opacity = String(Math.max(0,.6-scrollY/450));
   if (Math.abs(pointerX-tiltX) + Math.abs(pointerY-tiltY) > .01) requestFrame();
@@ -101,3 +105,13 @@ if (!motion.matches && scrollY < 20) {
   ],{ duration:1900,easing:'cubic-bezier(.22,.65,.28,1)' });
   ring.animate([{opacity:0,scale:'.6'},{opacity:.7,scale:'1.04'},{opacity:.3,scale:'1.15'}],{delay:1000,duration:1200});
 }
+
+
+// CSS geometry remains visible if WebGL is unavailable or the GLB fails to load.
+import('./model.js').then(async ({ createChip }) => {
+  model = await createChip(arrival, () => { model = null; });
+  model.draw(modelPose);
+  requestFrame();
+}).catch(error => {
+  console.warn('3D unavailable; retaining the fallback chip.', error);
+});
