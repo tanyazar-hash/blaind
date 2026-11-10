@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/atmosphere/atmosphere.css">
 </head>
 <body class="atmosphere-page">
-  <a class="atm-skip" href="#space">Перейти к истории</a>
+  <a class="atm-skip" href="#club-moments">Перейти к истории</a>
   <header class="atm-header">
     <a class="brand" href="/" aria-label="Блаинд — главная"><img src="/assets/club-logo.svg" width="600" height="300" alt="Блаинд"></a>
     <nav aria-label="Основная навигация"><a href="/">Клуб</a><a href="/atmosphere/" aria-current="page">Атмосфера</a><a href="/arena">ARENA</a><a href="/#contact" class="nav-cta">Связаться</a></nav>
@@ -21,19 +21,29 @@
   </header>
   <main>
     <section class="atm-scene atm-hero" id="atmosphere" aria-labelledby="atm-title">
-      <figure class="atm-photo atm-photo-1 atm-hero-photo">
-          <a class="atm-frame atm-hero-frame" href="/atm1.jpg" data-photo="0" data-full="/atmosphere/images/atm1-1280.webp" aria-label="Открыть фото: За одним столом" style="--ratio:1280/960">
-            <img src="/atmosphere/images/atm1-1280.webp" srcset="/atmosphere/images/atm1-480.webp 480w, /atmosphere/images/atm1-960.webp 960w, /atmosphere/images/atm1-1280.webp 1280w" sizes="(max-aspect-ratio: 4/3) 134vh, 100vw" width="1280" height="960" alt="Гости Блаинд вместе у покерного стола" loading="eager" decoding="async" fetchpriority="high">
+
+      <div class="atm-hero-copy">
+        <p class="eyebrow atm-hero-eyebrow">БЛАИНД / МЕСТО, КУДА ВОЗВРАЩАЮТСЯ</p>
+        <h1 id="atm-title"><span class="atm-title-line"><span>АТМОСФЕРА</span></span><span class="atm-title-line"><em>BLΛIND</em></span></h1>
+        <p class="atm-hero-description">Здесь важна не только игра.<br>Но и те, с кем делишь этот вечер.</p>
+      </div>
+      <div class="atm-hero-bottom"><a href="#club-moments" class="atm-scroll">ПРОДОЛЖИТЬ ИСТОРИЮ <span aria-hidden="true">↓</span></a><span class="atm-location">НОВОСИБИРСК / СПОРТИВНЫЙ ПОКЕР</span></div>
+    </section>
+    <section class="atm-scene atm-gathering" id="club-moments" aria-labelledby="gathering-title">
+      <div class="atm-gathering-layout">
+        <div class="atm-story-copy atm-gathering-copy atm-reveal">
+          <p class="eyebrow">01 / АТМОСФЕРА БЛАИНД</p>
+          <h2 id="gathering-title">Здесь начинается<br><em>нечто большее.</em></h2>
+          <p class="atm-body-copy">Есть места, которые запоминаются не словами. А ощущением, с которым ты возвращаешься.</p>
+        </div>
+      <figure class="atm-photo atm-photo-1 atm-reveal">
+          <a class="atm-frame" href="/atm1.jpg" data-photo="0" data-full="/atmosphere/images/atm1-1280.webp" aria-label="Открыть фото: За одним столом" style="--ratio:1280/960">
+            <img src="/atmosphere/images/atm1-960.webp" srcset="/atmosphere/images/atm1-480.webp 480w, /atmosphere/images/atm1-960.webp 960w, /atmosphere/images/atm1-1280.webp 1280w" sizes="(max-width: 600px) 88vw, 61vw" width="1280" height="960" alt="Гости Блаинд вместе у покерного стола" loading="lazy" decoding="async">
             <span class="atm-photo-open" aria-hidden="true">ОТКРЫТЬ КАДР <span class="arrow-icon"></span></span>
           </a>
           <figcaption class="atm-sr-only"><span>За одним столом</span><span class="atm-photo-number">01 / 07</span></figcaption>
         </figure>
-      <div class="atm-hero-copy">
-        <p class="eyebrow atm-hero-eyebrow">01 / АТМОСФЕРА БЛАИНД</p>
-        <h1 id="atm-title"><span class="atm-title-line"><span>Здесь начинается</span></span><span class="atm-title-line"><em>нечто большее.</em></span></h1>
-        <p class="atm-hero-description">Есть места, которые запоминаются не словами. <br>А ощущением, с которым ты возвращаешься.</p>
       </div>
-      <div class="atm-hero-bottom"><a href="#space" class="atm-scroll">ПРОДОЛЖИТЬ ИСТОРИЮ <span aria-hidden="true">↓</span></a><span class="atm-location">НОВОСИБИРСК / СПОРТИВНЫЙ ПОКЕР</span></div>
     </section>
     <section class="atm-scene atm-space" id="space" aria-labelledby="space-title">
       <div class="atm-space-layout">

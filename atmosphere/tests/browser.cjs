@@ -9,12 +9,13 @@ const base=process.env.ATM_BASE_URL||'http://127.0.0.1:8030';
   const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],badResponses=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400)badResponses.push(r.url())});
   await page.goto(base+'/atmosphere/');await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(1200);
-  assert.equal(await page.locator('.atm-photo').count(),7);assert.equal((await page.locator('h1').innerText()).replace(/\s+/g,' ').trim(),'Здесь начинается нечто большее.');
-  assert.equal(await page.locator('main > section').count(),4);
+  assert.equal(await page.locator('.atm-photo').count(),7);assert.equal((await page.locator('h1').innerText()).replace(/\s+/g,' ').trim(),'АТМОСФЕРА BLΛIND');
+  assert.equal(await page.locator('main > section').count(),5);
   const sources=await page.locator('main .atm-frame').evaluateAll(nodes=>nodes.map(n=>new URL(n.href).pathname));
   assert.deepEqual([...sources].sort(),Array.from({length:7},(_,i)=>'/atm'+(i+1)+'.jpg'));
   assert.equal(new Set(sources).size,7);
-  assert.equal(await page.locator('.atm-hero').evaluate(n=>Math.abs(n.getBoundingClientRect().height-innerHeight)<2),true);
+  assert.equal(await page.locator('.atm-hero img').count(),0);
+  assert.equal(await page.locator('.atm-photo-1').evaluate(n=>n.getBoundingClientRect().top>=document.querySelector('.atm-hero').getBoundingClientRect().bottom),true);
   await page.getByRole('heading',{name:'У каждой детали — своё значение.'}).count().then(count=>assert.equal(count,1));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await page.screenshot({path:'/tmp/blaind-atmosphere/desktop-hero.png'});
@@ -23,6 +24,7 @@ const base=process.env.ATM_BASE_URL||'http://127.0.0.1:8030';
    await page.waitForTimeout(150);
   }
   await page.screenshot({path:'/tmp/blaind-atmosphere/desktop-full.png',fullPage:true});
+  await page.locator('#club-moments').scrollIntoViewIfNeeded();await page.waitForTimeout(1100);await page.screenshot({path:'/tmp/blaind-atmosphere/desktop-gathering.png'});
   await page.locator('#space-title').scrollIntoViewIfNeeded();await page.waitForTimeout(1100);await page.screenshot({path:'/tmp/blaind-atmosphere/desktop-space.png'});
   await page.locator('#people-title').scrollIntoViewIfNeeded();await page.waitForTimeout(1100);await page.screenshot({path:'/tmp/blaind-atmosphere/desktop-people.png'});
   await page.locator('#finale').scrollIntoViewIfNeeded();await page.waitForTimeout(1100);await page.screenshot({path:'/tmp/blaind-atmosphere/desktop-finale.png'});
@@ -51,6 +53,6 @@ const base=process.env.ATM_BASE_URL||'http://127.0.0.1:8030';
   }
   const noJS=await browser.newPage({javaScriptEnabled:false,viewport:{width:390,height:844}});await noJS.goto(base+'/atmosphere/');assert.equal(await noJS.locator('.atm-frame').count(),7);assert.equal(await noJS.locator('.atm-frame').first().isVisible(),true);assert.equal(await noJS.locator('#atm-mobile-nav').isVisible(),true);await noJS.locator('.atm-frame').first().locator('.atm-photo-open').click();await noJS.waitForURL('**/atm1.jpg');await noJS.close();
   const failure=await browser.newPage({reducedMotion:'reduce'});await failure.route('**/atmosphere/images/atm1-1280.webp',r=>r.fulfill({status:404,body:''}));await failure.goto(base+'/atmosphere/');await failure.locator('.atm-frame').first().locator('.atm-photo-open').click();await failure.locator('#atm-viewer-error').waitFor({state:'visible'});await failure.locator('.atm-viewer-next').click();await failure.locator('#atm-viewer-image.is-loaded').waitFor();await failure.keyboard.press('Escape');await failure.close();
-  assert.deepEqual(errors,[]);console.log('PASS: seven photos; desktop/mobile 320–1440; full-size viewer, proportions, arrows, wraparound, swipe, Escape, focus, scroll unlock, reduced motion, no-JS originals, image failure recovery; four story chapters with seven unique photographs.');
+  assert.deepEqual(errors,[]);console.log('PASS: seven photos; desktop/mobile 320–1440; full-size viewer, proportions, arrows, wraparound, swipe, Escape, focus, scroll unlock, reduced motion, no-JS originals, image failure recovery; text-only introduction and four story chapters with seven unique photographs.');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
