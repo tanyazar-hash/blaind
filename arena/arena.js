@@ -1,0 +1,315 @@
+import {arenaDataSource,resolveImageUrl} from './data-source.js';
+import {rankPlayers,selectPlayers} from './ranking.js';
+
+/** @typedef {import('./types').RankedPlayer} RankedPlayer */
+/** @typedef {import('./types').Tournament} Tournament */
+const $=selector=>document.querySelector(selector);
+const numbers=new Intl.NumberFormat('ru-RU');
+const plural=new Intl.PluralRules('ru-RU');
+const motion=matchMedia('(prefers-reduced-motion: reduce)');
+const defaultZone='Asia/Novosibirsk';
+const state={ranked:[],query:'',sortBy:'points',direction:'desc',rows:new Map()};
+const rowAnimations=new Set(), detailAnimations=new Map();
+let revealObserver,returnFocus=null;
+const tableWrap=$('#ranking-table-wrap'), tbody=$('#ranking-body');
+const rankingMessage=$('#ranking-message'), tournamentsMessage=$('#tournaments-message');
+const search=$('#player-search'),sort=$('#ranking-sort'),direction=$('#sort-direction');
+const summary=$('#ranking-summary'),clear=$('#clear-search');
+const viewer=$('#image-viewer'),viewerImage=$('#viewer-image'),viewerError=$('#viewer-error');
+const menu=$('.arena-header .menu'),mobileNav=$('#arena-mobile-nav');
+
+function element(tag,className,text){
+  const node=document.createElement(tag);
+  if(className)node.className=className;
+  if(text!==undefined)node.textContent=text;
+  return node;
+}
+function word(count,forms){return forms[{one:0,few:1,other:2}[plural.select(count)]??2]}
+function formatDate(value,options={},zone=defaultZone){
+  return new Intl.DateTimeFormat('ru-RU',{timeZone:zone,...options}).format(new Date(value));
+}
+function setDemo(kind,isDemo){
+  document.querySelectorAll('[data-demo="'+kind+'"]').forEach(node=>{node.hidden=isDemo===false});
+}
+function panelMessage(container,text,action,label='Повторить',alert=false){
+  container.replaceChildren(element('p','',text));
+  container.setAttribute('role',alert?'alert':'status');
+  container.hidden=false;
+  if(action){
+    const button=element('button','',label);button.type='button';
+    button.addEventListener('click',action);container.append(button);
+  }
+}
+function setFiltersEnabled(enabled){
+  search.disabled=!enabled;sort.disabled=!enabled;direction.disabled=!enabled;
+  document.querySelectorAll('[data-column-sort]').forEach(button=>{button.disabled=!enabled});
+}
+function reveal(){
+  if(motion.matches||!('IntersectionObserver' in window)){
+    document.body.classList.remove('js-motion');
+    return;
+  }
+  document.body.classList.add('js-motion');
+  if(!revealObserver)revealObserver=new IntersectionObserver(entries=>{
+    for(const entry of entries)if(entry.isIntersecting){
+      entry.target.classList.add('is-visible');revealObserver.unobserve(entry.target);
+    }
+  },{threshold:.08});
+  document.querySelectorAll('.arena-reveal:not(.is-visible)').forEach(node=>revealObserver.observe(node));
+}
+
+function showLeaders(){
+  const list=$('#leaders-list');list.replaceChildren();
+  const count=state.ranked.length;
+  $('#players-total').textContent=numbers.format(count);
+  $('#players-total').nextElementSibling.textContent=word(count,['игрок','игрока','игроков'])+' в рейтинге';
+  if(!count){list.append(element('li','leaders-loading','Рейтинг формируется'));return}
+  for(const player of state.ranked.slice(0,3)){
+    const row=element('li','leader-line');
+    const points=element('span','leader-points',numbers.format(player.points));
+    points.append(element('small','','ОЧК.'));
+    row.append(element('span','leader-place',String(player.rank).padStart(2,'0')),
+      element('span','leader-name',player.nickname),points);
+    list.append(row);
+  }
+}
+/** @param {RankedPlayer} player */
+function playerRow(player){
+  const row=element('tr',player.rank<=3?'rank-top rank-'+player.rank:'');
+  row.dataset.playerId=player.id;row.dataset.rank=String(player.rank);
+  const rank=element('td','rank-cell');
+  rank.append(element('span','rank-badge',String(player.rank).padStart(2,'0')));
+  const played=element('td','player-played',numbers.format(player.tournamentsPlayed));played.dataset.label='Турниры';
+  const wins=element('td','player-wins',numbers.format(player.wins));wins.dataset.label='Победы';
+  row.append(rank,element('td','player-name',player.nickname),played,wins,
+    element('td','player-points',numbers.format(player.points)));
+  return row;
+}
+function renderRanking(){
+  for(const animation of rowAnimations)animation.cancel();rowAnimations.clear();
+  const oldPositions=new Map([...tbody.rows].map(row=>[row.dataset.playerId,row.getBoundingClientRect().top]));
+  const players=selectPlayers(state.ranked,state);
+  const fragment=document.createDocumentFragment();
+  for(const player of players){
+    let row=state.rows.get(player.id);
+    if(!row){row=playerRow(player);state.rows.set(player.id,row)}
+    fragment.append(row);
+  }
+  tbody.replaceChildren(fragment);
+  tableWrap.hidden=!players.length;
+  rankingMessage.hidden=!!players.length;
+  if(!players.length){
+    panelMessage(rankingMessage,state.ranked.length?'Игрок не найден. Попробуйте другой никнейм.':'Рейтинг пока пуст. Первые результаты появятся после турниров.',
+      state.query?resetSearch:null,'Сбросить поиск');
+  }
+  const names={points:'очкам',wins:'победам',tournamentsPlayed:'сыгранным турнирам'};
+  summary.textContent=state.query
+    ? 'Найдено '+players.length+' из '+state.ranked.length+' · по '+names[state.sortBy]
+    : numbers.format(players.length)+' '+word(players.length,['игрок','игрока','игроков'])+' · по '+names[state.sortBy];
+  sort.value=state.sortBy;clear.hidden=!state.query;
+  const ascending=state.direction==='asc';
+  direction.dataset.direction=state.direction;
+  direction.querySelector('.direction-label').textContent=ascending?'По возрастанию':'По убыванию';
+  direction.setAttribute('aria-label','Изменить направление сортировки: сейчас '+(ascending?'по возрастанию':'по убыванию'));
+  document.querySelectorAll('th[data-sort]').forEach(th=>{
+    if(th.dataset.sort===state.sortBy)th.setAttribute('aria-sort',ascending?'ascending':'descending');
+    else th.removeAttribute('aria-sort');
+  });
+  if(!motion.matches){
+    [...tbody.rows].forEach((row,index)=>{
+      const previous=oldPositions.get(row.dataset.playerId);
+      const delta=previous===undefined?7:previous-row.getBoundingClientRect().top;
+      if(Math.abs(delta)<.5&&previous!==undefined)return;
+      const animation=row.animate([
+        {transform:'translateY('+delta+'px)',opacity:previous===undefined?0:1},
+        {transform:'translateY(0)',opacity:1}
+      ],{duration:260,easing:'cubic-bezier(.22,.61,.36,1)',delay:previous===undefined?Math.min(index*13,100):0});
+      rowAnimations.add(animation);
+      animation.finished.catch(()=>{}).finally(()=>rowAnimations.delete(animation));
+    });
+  }
+}
+function resetSearch(){
+  state.query='';search.value='';renderRanking();search.focus({preventScroll:true});
+}
+async function loadPlayers(){
+  setFiltersEnabled(false);$('#ranking').setAttribute('aria-busy','true');
+  tableWrap.hidden=true;
+  panelMessage(rankingMessage,'Загружаем рейтинг…');
+  try{
+    const payload=await arenaDataSource.getPlayers();
+    state.ranked=rankPlayers(payload.players);state.rows.clear();
+    const updated=$('#ranking-updated');
+    updated.dateTime=payload.updatedAt;
+    updated.textContent=formatDate(payload.updatedAt,{day:'numeric',month:'long',year:'numeric'});
+    setDemo('players',payload.isDemo);
+    showLeaders();setFiltersEnabled(true);renderRanking();
+  }catch(error){
+    console.warn('Arena rating unavailable:',error);
+    summary.textContent='Рейтинг временно недоступен';
+    $('#leaders-list').replaceChildren(element('li','leaders-loading','Рейтинг временно недоступен'));
+    $('#players-total').textContent='—';
+    panelMessage(rankingMessage,'Не удалось загрузить рейтинг. Попробуйте ещё раз.',loadPlayers,'Повторить',true);
+  }finally{$('#ranking').setAttribute('aria-busy','false')}
+}
+
+function toggleDetails(button,panel){
+  const opening=button.getAttribute('aria-expanded')!=='true';
+  const from=panel.hidden?0:panel.getBoundingClientRect().height;
+  detailAnimations.get(panel)?.cancel();
+  button.setAttribute('aria-expanded',String(opening));
+  panel.hidden=false;
+  if(motion.matches){panel.hidden=!opening;detailAnimations.delete(panel);return}
+  const animation=panel.animate([
+    {height:from+'px',opacity:from?1:0},
+    {height:(opening?panel.scrollHeight:0)+'px',opacity:opening?1:0}
+  ],{duration:260,easing:'cubic-bezier(.22,.61,.36,1)',fill:'both'});
+  detailAnimations.set(panel,animation);
+  animation.finished.then(()=>{
+    if(detailAnimations.get(panel)!==animation)return;
+    panel.hidden=!opening;animation.cancel();detailAnimations.delete(panel);
+  }).catch(()=>{});
+}
+function openImage(tournament,url,caption,trigger){
+  returnFocus=trigger;
+  $('#viewer-title').textContent=tournament.title;
+  $('#viewer-caption').textContent=caption;
+  viewerError.hidden=true;viewerImage.hidden=false;
+  viewerImage.alt=tournament.imageAlt||('Афиша турнира '+tournament.title);
+  viewerImage.onerror=()=>{viewerImage.hidden=true;viewerError.hidden=false};
+  viewerImage.src=url;
+  viewer.showModal();document.body.classList.add('image-open');
+  $('#close-viewer').focus({preventScroll:true});
+}
+/** @param {Tournament} tournament */
+function tournamentCard(tournament,zone){
+  const card=element('article','tournament-card arena-reveal');card.dataset.tournamentId=tournament.id;
+  const titleId='title-'+encodeURIComponent(tournament.id);
+  card.setAttribute('aria-labelledby',titleId);
+  const media=element('button','poster-trigger');media.type='button';media.disabled=true;
+  const placeholder=element('div','poster-placeholder');placeholder.setAttribute('aria-hidden','true');
+  const brand=element('img');brand.src='/assets/club-logo.svg';brand.alt='';brand.width=600;brand.height=300;
+  placeholder.append(brand,element('span','','БЛАИНД / ТУРНИРЫ'));
+  const zoom=element('span','poster-zoom');zoom.setAttribute('aria-hidden','true');zoom.append(element('span','arrow-icon'));
+  media.append(placeholder,zoom);
+  const date=formatDate(tournament.startsAt,{weekday:'short',day:'numeric',month:'long'},zone);
+  const time=formatDate(tournament.startsAt,{hour:'2-digit',minute:'2-digit'},zone);
+  const caption=date+' · '+time+' · '+zoneName(zone,tournament.startsAt);
+  const imageUrl=resolveImageUrl(tournament.imageUrl);
+  if(imageUrl){
+    const image=element('img');image.alt=tournament.imageAlt||('Афиша турнира '+tournament.title);
+    image.loading='lazy';image.decoding='async';image.width=1200;image.height=800;
+    image.style.objectFit=tournament.imageFit||'cover';
+    if(tournament.imageFocus)image.style.objectPosition=tournament.imageFocus.x+'% '+tournament.imageFocus.y+'%';
+    image.onload=()=>{media.classList.add('has-image');media.disabled=false;media.setAttribute('aria-label','Открыть изображение турнира '+tournament.title)};
+    image.onerror=()=>{image.remove();media.classList.remove('has-image');media.disabled=true;media.setAttribute('aria-label','Афиша турнира '+tournament.title+' пока не добавлена')};
+    media.append(image);image.src=imageUrl;
+    media.addEventListener('click',()=>{if(media.classList.contains('has-image'))openImage(tournament,image.currentSrc||imageUrl,caption,media)});
+  }else media.setAttribute('aria-label','Афиша турнира '+tournament.title+' пока не добавлена');
+  const body=element('div','tournament-body'),dateLine=element('div','tournament-date');
+  const when=element('time','',date);when.dateTime=tournament.startsAt;
+  dateLine.append(when,element('span','',time));
+  const title=element('h3','',tournament.title);title.id=titleId;
+  body.append(dateLine,title,element('p','tournament-description',tournament.description));
+  if(tournament.details.length){
+    const button=element('button','details-toggle','О турнире');button.type='button';
+    const panel=element('div','details-content');panel.id='details-'+titleId;panel.hidden=true;
+    button.setAttribute('aria-expanded','false');button.setAttribute('aria-controls',panel.id);
+    button.append(element('span','details-plus'));
+    const dl=element('dl');
+    for(const detail of tournament.details){const row=element('div');row.append(element('dt','',detail.label),element('dd','',detail.value));dl.append(row)}
+    panel.append(dl);body.append(button,panel);
+    button.addEventListener('click',()=>toggleDetails(button,panel));
+  }
+  card.append(media,body);
+  return card;
+}
+function zoneName(zone,at){
+  const names={'Asia/Novosibirsk':'Новосибирск','Europe/Moscow':'Москва'};
+  const offset=new Intl.DateTimeFormat('ru',{timeZone:zone,timeZoneName:'shortOffset'})
+    .formatToParts(new Date(at)).find(part=>part.type==='timeZoneName').value.replace('GMT','UTC');
+  return names[zone]?names[zone]+' · '+offset:offset;
+}
+async function loadTournaments(){
+  $('#tournaments').setAttribute('aria-busy','true');
+  panelMessage(tournamentsMessage,'Загружаем расписание…');
+  const grid=$('#tournaments-grid');grid.replaceChildren();
+  try{
+    const payload=await arenaDataSource.getTournaments();
+    const tournaments=[...payload.tournaments].sort((a,b)=>
+      a.displayOrder-b.displayOrder || Date.parse(a.startsAt)-Date.parse(b.startsAt) || a.id.localeCompare(b.id));
+    $('#tournaments-total').textContent=numbers.format(tournaments.length);
+    $('#tournaments-total').nextElementSibling.textContent=word(tournaments.length,['турнир','турнира','турниров'])+' в расписании';
+    $('#tournament-timezone').textContent=zoneName(payload.timeZone,payload.updatedAt);
+    setDemo('tournaments',payload.isDemo);
+    if(!tournaments.length){panelMessage(tournamentsMessage,'Новые турниры скоро появятся.');return}
+    grid.replaceChildren(...tournaments.map(tournament=>tournamentCard(tournament,payload.timeZone)));
+    tournamentsMessage.hidden=true;reveal();
+  }catch(error){
+    console.warn('Arena tournaments unavailable:',error);
+    $('#tournaments-total').textContent='—';
+    panelMessage(tournamentsMessage,'Не удалось загрузить расписание. Попробуйте ещё раз.',loadTournaments,'Повторить',true);
+  }finally{$('#tournaments').setAttribute('aria-busy','false')}
+}
+
+$('#ranking-filters').addEventListener('submit',event=>event.preventDefault());
+search.addEventListener('input',()=>{state.query=search.value;renderRanking()});
+clear.addEventListener('click',resetSearch);
+sort.addEventListener('change',()=>{state.sortBy=sort.value;state.direction='desc';renderRanking()});
+direction.addEventListener('click',()=>{state.direction=state.direction==='desc'?'asc':'desc';renderRanking()});
+document.querySelectorAll('[data-column-sort]').forEach(button=>button.addEventListener('click',()=>{
+  const field=button.dataset.columnSort;
+  if(state.sortBy===field)state.direction=state.direction==='desc'?'asc':'desc';
+  else{state.sortBy=field;state.direction='desc'}
+  renderRanking();
+}));
+$('#close-viewer').addEventListener('click',()=>viewer.close());
+viewer.addEventListener('click',event=>{
+  if(event.target!==viewer)return;
+  const rect=viewer.getBoundingClientRect();
+  if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)viewer.close();
+});
+viewer.addEventListener('keydown',event=>{
+  if(event.key!=='Tab')return;
+  const controls=[...viewer.querySelectorAll('button:not([disabled]),[href],[tabindex]:not([tabindex="-1"])')]
+    .filter(node=>node.getClientRects().length);
+  if(!controls.length){event.preventDefault();return}
+  const first=controls[0],last=controls.at(-1),active=document.activeElement;
+  if(event.shiftKey&&(active===first||!viewer.contains(active))){event.preventDefault();last.focus()}
+  else if(!event.shiftKey&&(active===last||!viewer.contains(active))){event.preventDefault();first.focus()}
+});
+viewer.addEventListener('close',()=>{
+  document.body.classList.remove('image-open');
+  viewerImage.onerror=null;viewerImage.removeAttribute('src');
+  if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});
+  returnFocus=null;
+});
+function closeMenu(){mobileNav.classList.remove('open');menu.setAttribute('aria-expanded','false')}
+menu.addEventListener('click',()=>{
+  const open=mobileNav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));
+});
+mobileNav.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeMenu));
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenu()});
+document.addEventListener('click',event=>{if(!$('.arena-header').contains(event.target))closeMenu()});
+window.addEventListener('resize',()=>{if(innerWidth>600)closeMenu()});
+window.addEventListener('pageshow',()=>document.body.classList.remove('page-exit'));
+document.addEventListener('click',event=>{
+  if(motion.matches||event.defaultPrevented||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+  const link=event.target.closest('a[href]');
+  if(!link||link.target||link.hasAttribute('download'))return;
+  const url=new URL(link.href);
+  if(url.origin!==location.origin||url.pathname===location.pathname||url.pathname===location.pathname.replace(/\/$/,''))return;
+  event.preventDefault();document.body.classList.add('page-exit');
+  setTimeout(()=>location.assign(url.href),145);
+});
+motion.addEventListener('change',()=>{
+  if(motion.matches){
+    for(const animation of rowAnimations)animation.cancel();rowAnimations.clear();
+    for(const [panel,animation] of detailAnimations){animation.cancel();panel.hidden=panel.previousElementSibling.getAttribute('aria-expanded')!=='true'}
+    detailAnimations.clear();
+  }
+  reveal();
+});
+reveal();
+void loadPlayers();
+void loadTournaments();

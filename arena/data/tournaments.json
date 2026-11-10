@@ -1,0 +1,86 @@
+{
+  "isDemo": true,
+  "updatedAt": "2026-11-10T19:00:00+07:00",
+  "timeZone": "Asia/Novosibirsk",
+  "tournaments": [
+    {
+      "id": "tournament-golden-night",
+      "title": "Golden Night",
+      "startsAt": "2026-11-13T19:00:00+07:00",
+      "description": "Пятничный вечер за одним столом. Классический холдем и особая атмосфера клуба.",
+      "details": [
+        {
+          "label": "Формат",
+          "value": "Безлимитный Texas Hold’em"
+        },
+        {
+          "label": "Стартовый стек",
+          "value": "30 000"
+        },
+        {
+          "label": "Уровни",
+          "value": "20 минут"
+        }
+      ],
+      "displayOrder": 10,
+      "imageUrl": "./images/golden-night.webp",
+      "imageAlt": "Чёрно-золотая фишка Блаинд на тёмном фоне",
+      "imageFit": "cover",
+      "imageFocus": {
+        "x": 50,
+        "y": 50
+      },
+      "imageStorageKey": null
+    },
+    {
+      "id": "tournament-deep-stack",
+      "title": "Deep Stack",
+      "startsAt": "2026-11-14T18:00:00+07:00",
+      "description": "Больше пространства для стратегии. Глубокие стеки, вдумчивая игра и точные решения.",
+      "details": [
+        {
+          "label": "Формат",
+          "value": "Безлимитный Texas Hold’em"
+        },
+        {
+          "label": "Стартовый стек",
+          "value": "50 000"
+        },
+        {
+          "label": "Уровни",
+          "value": "25 минут"
+        }
+      ],
+      "displayOrder": 20,
+      "imageUrl": "./images/deep-stack.webp",
+      "imageAlt": "Четыре туза с золотой отделкой, раскрытые веером",
+      "imageFit": "cover",
+      "imageStorageKey": null
+    },
+    {
+      "id": "tournament-club-evening",
+      "title": "Клубный вечер",
+      "startsAt": "2026-11-20T19:30:00+07:00",
+      "description": "Знакомые лица и новые встречи. Камерный турнир для тех, кто ценит саму игру.",
+      "details": [
+        {
+          "label": "Формат",
+          "value": "Безлимитный Texas Hold’em"
+        },
+        {
+          "label": "Стартовый стек",
+          "value": "25 000"
+        },
+        {
+          "label": "Уровни",
+          "value": "15 минут"
+        }
+      ],
+      "displayOrder": 30,
+      "imageUrl": "./images/club-evening.webp",
+      "imageAlt": "Коллекционные карты с чёрно-золотыми рубашками Блаинд",
+      "imageFit": "cover",
+      "imageStorageKey": null
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101110">
+  <meta name="description" content="Блаинд ARENA — турниры, рейтинг и лучшие игроки клуба.">
+  <title>BLΛIND ARENA — рейтинг и турниры</title>
+  <link rel="icon" href="/assets/club-logo.svg" type="image/svg+xml">
+  <link rel="preload" href="/arena/fonts/playfair.woff" as="font" type="font/woff" crossorigin>
+  <link rel="preload" href="/arena/fonts/manrope.woff" as="font" type="font/woff" crossorigin>
+  <link rel="stylesheet" href="/design.css">
+  <link rel="stylesheet" href="/arena/arena.css">
+</head>
+<body class="arena-page">
+  <a class="skip-link" href="#ranking">Перейти к рейтингу</a>
+  <header class="arena-header">
+    <a class="brand" href="/" aria-label="Блаинд — главная"><img src="/assets/club-logo.svg" alt="Блаинд — спортивный покер" width="600" height="300"></a>
+    <nav aria-label="Основная навигация"><a href="/">Клуб</a><a href="/arena" aria-current="page">ARENA</a><a href="#ranking">Рейтинг</a><a class="nav-cta" href="#tournaments">Турниры</a></nav>
+    <button class="menu" type="button" aria-expanded="false" aria-controls="arena-mobile-nav">МЕНЮ</button>
+    <nav class="mobile-nav" id="arena-mobile-nav" aria-label="Мобильная навигация"><a href="/">Клуб</a><a href="/arena" aria-current="page">ARENA</a><a href="#ranking">Рейтинг</a><a href="#tournaments">Турниры</a></nav>
+  </header>
+  <main id="arena-main">
+    <section class="arena-hero" aria-labelledby="arena-title">
+      <div class="arena-container">
+        <div class="hero-layout">
+          <div class="arena-intro">
+            <p class="eyebrow">БЛАИНД / ИГРА В ЦИФРАХ</p>
+            <h1 id="arena-title">BLΛIND<br><em>ARENA</em></h1>
+            <p class="arena-lead">Турниры. Рейтинг.<br>Лучшие игроки клуба.</p>
+            <div class="arena-actions"><a class="btn" href="#ranking">Рейтинг игроков <span class="arrow-icon" aria-hidden="true"></span></a><a class="arena-textlink" href="#tournaments">Актуальные турниры <span aria-hidden="true">↓</span></a></div>
+          </div>
+          <aside class="leaders-panel" aria-labelledby="leaders-title">
+            <div class="arena-suit" aria-hidden="true">♠</div>
+            <div class="leaders-heading"><span id="leaders-title">ВЕРШИНА РЕЙТИНГА</span><span>TOP / 03</span></div>
+            <ol id="leaders-list" class="leaders-list"><li class="leaders-loading">Загружаем рейтинг<span class="loading-line" aria-hidden="true"></span></li></ol>
+            <p class="demo-note" data-demo="players">Демонстрационные данные</p>
+          </aside>
+        </div>
+        <div class="arena-hero-bottom">
+          <div class="arena-metrics"><div><span id="players-total">—</span><small>игроков в рейтинге</small></div><div><span id="tournaments-total">—</span><small>турнира в расписании</small></div></div>
+          <a href="#ranking" class="scroll-cue">ВАШЕ МЕСТО В ИГРЕ <span aria-hidden="true">↓</span></a>
+        </div>
+      </div>
+    </section>
+    <section class="arena-section ranking-section" id="ranking" aria-labelledby="ranking-title">
+      <div class="arena-container">
+        <div class="arena-section-heading arena-reveal">
+          <div><p class="section-num">01 — РЕЙТИНГ</p><h2 id="ranking-title">Игроки <em>арены.</em></h2></div>
+          <div class="section-meta"><span class="demo-note" data-demo="players">Демонстрационный рейтинг</span><p>Обновлено <time id="ranking-updated">—</time></p></div>
+        </div>
+        <form id="ranking-filters" class="ranking-toolbar arena-reveal" role="search" aria-label="Поиск и сортировка игроков">
+          <div class="search-field"><label for="player-search" class="visually-hidden">Поиск по никнейму</label><span class="search-icon" aria-hidden="true"></span><input id="player-search" type="search" placeholder="Поиск по никнейму" maxlength="100" autocomplete="off" spellcheck="false" aria-describedby="ranking-summary"><button id="clear-search" type="button" class="clear-search" aria-label="Очистить поиск" hidden><span aria-hidden="true"></span></button></div>
+          <div class="sort-controls"><label for="ranking-sort">Сортировать</label><select id="ranking-sort"><option value="points">По очкам</option><option value="wins">По победам</option><option value="tournamentsPlayed">По турнирам</option></select><button id="sort-direction" type="button" data-direction="desc" aria-label="Изменить направление сортировки: сейчас по убыванию"><span class="direction-icon" aria-hidden="true"></span><span class="direction-label">По убыванию</span></button></div>
+        </form>
+        <div class="ranking-meta"><p id="ranking-summary" role="status" aria-live="polite" aria-atomic="true">Загружаем игроков…</p><span>МЕСТО / МАСТЕРСТВО / ХАРАКТЕР</span></div>
+        <div id="ranking-message" class="panel-message" role="status"><p>Загружаем рейтинг…</p><div class="loading-line" aria-hidden="true"></div></div>
+        <div id="ranking-table-wrap" hidden>
+          <table class="ranking-table">
+            <caption class="visually-hidden">Рейтинг игроков Блаинд. Демонстрационные данные. Место определяется по очкам.</caption>
+            <thead><tr><th scope="col">Место</th><th scope="col">Игрок</th><th scope="col" data-sort="tournamentsPlayed"><button type="button" data-column-sort="tournamentsPlayed">Турниры <span class="column-arrow" aria-hidden="true"></span></button></th><th scope="col" data-sort="wins"><button type="button" data-column-sort="wins">Победы <span class="column-arrow" aria-hidden="true"></span></button></th><th scope="col" data-sort="points" aria-sort="descending"><button type="button" data-column-sort="points">Очки <span class="column-arrow" aria-hidden="true"></span></button></th></tr></thead>
+            <tbody id="ranking-body"></tbody>
+          </table>
+        </div>
+        <p class="ranking-explainer">Место определяется по рейтинговым очкам. При равенстве очков выше игрок с большим числом побед.</p>
+      </div>
+    </section>
+    <section class="arena-section tournaments-section" id="tournaments" aria-labelledby="tournaments-title">
+      <div class="arena-container">
+        <div class="arena-section-heading arena-reveal">
+          <div><p class="section-num">02 — СЛЕДУЮЩИЙ ХОД</p><h2 id="tournaments-title">Актуальные<br><em>турниры.</em></h2></div>
+          <div class="section-meta"><span class="demo-note" data-demo="tournaments">Демонстрационное расписание</span><p id="tournament-timezone">Новосибирск · UTC+7</p></div>
+        </div>
+        <div id="tournaments-message" class="panel-message" role="status"><p>Загружаем расписание…</p><div class="loading-line" aria-hidden="true"></div></div>
+        <div id="tournaments-grid" class="tournaments-grid"></div>
+      </div>
+    </section>
+  </main>
+  <footer class="arena-footer"><a class="brand" href="/" aria-label="Блаинд — главная"><img src="/assets/club-logo.svg" alt="Блаинд" width="600" height="300"></a><span>БЛАИНД · СПОРТИВНЫЙ ПОКЕР</span><a href="/">ВЕРНУТЬСЯ В КЛУБ <span class="arrow-icon" aria-hidden="true"></span></a></footer>
+  <dialog class="image-viewer" id="image-viewer" aria-labelledby="viewer-title">
+    <div class="viewer-heading"><h2 id="viewer-title"></h2><button type="button" id="close-viewer" aria-label="Закрыть изображение"><span aria-hidden="true"></span></button></div>
+    <div class="viewer-image-wrap"><img id="viewer-image" alt=""><p id="viewer-error" hidden>Изображение недоступно</p></div>
+    <p id="viewer-caption"></p>
+  </dialog>
+  <noscript><p class="noscript-note">Включите JavaScript, чтобы увидеть рейтинг игроков и расписание турниров.</p></noscript>
+  <script type="module" src="/arena/arena.js"></script>
+</body>
+</html>
