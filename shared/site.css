@@ -24,6 +24,9 @@ html:has(.public-page){scrollbar-gutter:stable}
 .public-page .reveal{opacity:1;transform:none;transition:none}
 .public-page.site-motion .site-reveal{opacity:0;transform:translate3d(0,18px,0);transition:opacity .76s cubic-bezier(.22,.61,.36,1),transform .76s cubic-bezier(.22,.61,.36,1);transition-delay:0s}
 .public-page.site-motion .site-reveal.site-visible{opacity:1;transform:none}
+/* One entrance treatment for text on all three first screens. */
+.public-page.site-motion .site-reveal.site-hero-reveal{opacity:0;transform:translate3d(0,26px,0);filter:blur(6px);transition:opacity .95s cubic-bezier(.22,.61,.36,1),transform .95s cubic-bezier(.22,.61,.36,1),filter .95s cubic-bezier(.22,.61,.36,1);transition-delay:calc(var(--hero-step,0)*90ms)}
+.public-page.site-motion .site-reveal.site-hero-reveal.site-visible{opacity:1;transform:none;filter:blur(0)}
 .site-link,.public-page .arena-textlink,.public-page .textlink{display:inline-flex;align-items:center;gap:18px;position:relative;font-size:9px;line-height:1.8;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:12px 0;transition:color .25s}
 .site-link:after,.public-page .arena-textlink:after,.public-page .textlink:after{content:'';position:absolute;left:0;right:0;bottom:5px;height:1px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .3s}
 .site-link:hover,.public-page .arena-textlink:hover,.public-page .textlink:hover{color:var(--gold)}.site-link:hover:after,.public-page .arena-textlink:hover:after,.public-page .textlink:hover:after{transform:scaleX(1)}
@@ -49,3 +52,5 @@ html:has(.public-page){scrollbar-gutter:stable}
 @media(scripting:none){.public-page .site-header{height:auto;min-height:var(--site-header-height);flex-wrap:wrap;padding-block:16px}.site-header .menu{display:none}.site-header .site-nav{display:flex;flex-wrap:wrap;gap:14px}.site-header .mobile-nav{display:none}}
 
 .public-page .event:last-of-type{border-bottom:1px solid var(--line)}
+
+@media(prefers-reduced-motion:reduce){.public-page.site-motion .site-reveal.site-hero-reveal,.public-page.site-motion .site-reveal.site-hero-reveal.site-visible{opacity:1;transform:none;filter:none;transition:none;transition-delay:0s}}

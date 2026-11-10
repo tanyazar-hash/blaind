@@ -17,6 +17,11 @@ export function revealContent(root=document){
  for(const node of candidates){
   if(node.closest('dialog')||node.classList.contains('site-reveal')||node.parentElement?.closest('.site-reveal'))continue;
   node.classList.add('site-reveal');
+  if(node.closest('.hero,.arena-hero,.atm-hero')){
+   node.classList.add('site-hero-reveal');
+   const step=node.matches('.eyebrow')?0:node.matches('h1')?1:node.matches('.lead,.arena-lead,.atm-hero-description')?2:3;
+   node.style.setProperty('--hero-step',String(step));
+  }
   if(reduced.matches||!observer)node.classList.add('site-visible');else observer.observe(node);
  }
 }
