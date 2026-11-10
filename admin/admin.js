@@ -5,7 +5,7 @@ const channel='BroadcastChannel'in window?new BroadcastChannel('blaind-arena'):n
 function notice(message,error=false){clearTimeout(noticeTimer);$('#notice').textContent=message;$('#notice').classList.toggle('error',error);if(!error)noticeTimer=setTimeout(()=>$('#notice').textContent='',6000)}
 async function api(resource,{method='GET',body,raw=false}={}){
  const response=await fetch('/api/admin?resource='+resource,{method,credentials:'same-origin',headers:{...(body&&!raw?{'Content-Type':'application/json'}:{}),...(raw?{'Content-Type':body.type}:{}),...(method!=='GET'?{'X-CSRF-Token':csrf||'','If-Match':String(snapshot?.revision||'')}: {})},body:body?(raw?body:JSON.stringify(body)):undefined});
- const data=await response.json();if(!response.ok){if(response.status===401&&resource!=='login'){$('#login').hidden=false;$('#workspace').hidden=true}throw new Error(data.error||'Не удалось выполнить запрос.')}return data;
+ const data=await response.json();if(!response.ok){if((response.status===401||response.status===403&&data.code==='FORBIDDEN')&&resource!=='login'){$('#login').hidden=false;$('#workspace').hidden=true}throw new Error(data.error||'Не удалось выполнить запрос.')}return data;
 }
 function el(tag,text,props={}){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;Object.assign(n,props);return n}
 function field(name,label,value='',type='text',options={}){const l=el('label',label),i=el(type==='textarea'?'textarea':'input',undefined,{name,value:value??'',...options});if(type!=='textarea')i.type=type;l.append(i);editor.append(l);return i}
@@ -51,4 +51,4 @@ document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(busy||!disc
 $('#reload').onclick=()=>{if(discard())void run(async()=>{await cleanup();await load();notice('Данные обновлены.')})};
 $('#logout').onclick=()=>{if(discard())void run(async()=>{await cleanup();await api('logout',{method:'POST'});dirty=false;snapshot=null;csrf=null;editor.replaceChildren();$('#login').hidden=false;$('#workspace').hidden=true;notice('Вы вышли из панели.')})};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
-void run(async()=>{const session=await api('session');if(session.authenticated)await load();else if(!session.configured)notice('Администрирование ещё не подключено. Требуется настроить базу данных и серверные переменные окружения.',true)});
+void run(async()=>{const session=await api('session');if(session.authenticated)await load()});

@@ -2,13 +2,13 @@ const assert=require('node:assert/strict');
 const {mkdtemp,rm,mkdir}=require('node:fs/promises');
 const {chromium}=require('playwright');
 (async()=>{
- const {pgStore}=await import('./pg-store.mjs'),{serve}=await import('../scripts/dev-server.mjs'),{createArenaBackend}=await import('../server/app.js'),{hashPassword}=await import('../server/auth.js');
- const dir=await mkdtemp('/tmp/blaind-browser-'),store=await pgStore(dir),password='browser-test-password';
- const server=serve({imageDirectory:dir+'/images',backend:createArenaBackend({store,env:{NODE_ENV:'test',ADMIN_PASSWORD_HASH:await hashPassword(password),ADMIN_SESSION_SECRET:'browser-test-session-secret-with-32-chars'}})});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const {pgStore}=await import('./pg-store.mjs'),{serve}=await import('../scripts/dev-server.mjs'),{createArenaBackend}=await import('../server/app.js'),{authFixture,testPassword}=await import('./auth-fixture.mjs');
+ const dir=await mkdtemp('/tmp/blaind-browser-'),auth=authFixture(),store=await pgStore(dir,{identity:auth.identity}),password=testPassword;
+ const server=serve({imageDirectory:dir+'/images',backend:createArenaBackend({store,auth,env:{NODE_ENV:'test'}})});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const base='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox']});
  try{
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(base+'/admin');await page.locator('[name=password]').fill(password);await page.locator('#login-form button').click();await page.locator('#workspace').waitFor({state:'visible'});
+ await page.goto(base+'/admin');await page.locator('[name=email]').fill('admin@example.test');await page.locator('[name=password]').fill(password);await page.locator('#login-form button').click();await page.locator('#workspace').waitFor({state:'visible'});
  await page.locator('[name=titleLine1]').fill('АРЕНА ТЕСТ');await page.locator('#editor button[type=submit]').click();await page.getByText('Изменения сохранены и опубликованы.',{exact:true}).waitFor();
  const arena=await browser.newPage();arena.on('pageerror',e=>errors.push(e.message));await arena.goto(base+'/arena');await arena.getByRole('heading',{name:'АРЕНА ТЕСТ ARENA'}).waitFor();
  await page.locator('[data-tab=players]').click();await page.locator('[name=nickname]').fill('Browser Player');await page.locator('[name=tournamentsPlayed]').fill('20');await page.locator('[name=wins]').fill('10');await page.locator('[name=points]').fill('99999');await page.locator('#editor button[type=submit]').click();await page.locator('#list').getByText('Browser Player',{exact:true}).waitFor();await arena.locator('#ranking-body tr').first().getByText('Browser Player',{exact:true}).waitFor({timeout:10000});

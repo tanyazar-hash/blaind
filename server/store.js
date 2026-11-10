@@ -1,15 +1,21 @@
 import {HttpError} from './errors.js';
 export class SupabaseStore{
-  constructor({url,key,fetchImpl=fetch}){
-    this.url=url.replace(/\/$/,'');this.key=key;this.fetch=fetchImpl;
+  constructor({url,key,token,fetchImpl=fetch}){
+    this.url=url.replace(/\/$/,'');this.key=key;this.token=token;this.fetch=fetchImpl;
   }
   async request(path,{method='GET',json,body,headers={}}={}){
     const response=await this.fetch(this.url+path,{
       method,redirect:'error',signal:AbortSignal.timeout(12000),
-      headers:{apikey:this.key,Authorization:'Bearer '+this.key,...(json!==undefined?{'Content-Type':'application/json'}:{}),...headers},
+      headers:{apikey:this.key,...(this.token?{Authorization:'Bearer '+this.token}:{}),...(json!==undefined?{'Content-Type':'application/json'}:{}),...headers},
       body:json!==undefined?JSON.stringify(json):body
     });
-    if(!response.ok)throw new HttpError(503,'База данных временно недоступна. Попробуйте ещё раз.','STORAGE_UNAVAILABLE');
+    if(!response.ok){
+      let code;try{code=(await response.json()).code}catch{}
+      if(['PGRST205','42P01'].includes(code))throw new HttpError(503,'Примените настройку базы Supabase.','DATABASE_NOT_INITIALIZED');
+      if(response.status===401)throw new HttpError(401,'Сессия завершилась. Войдите снова.','UNAUTHORIZED');
+      if(response.status===403)throw new HttpError(403,'Изменять данные могут только администраторы клуба.','FORBIDDEN');
+      throw new HttpError(503,'База данных временно недоступна. Попробуйте ещё раз.','STORAGE_UNAVAILABLE');
+    }
     if(response.status===204)return null;
     const raw=await response.text();return raw?JSON.parse(raw):null;
   }
@@ -25,17 +31,11 @@ export class SupabaseStore{
     if(!rows?.length)throw new HttpError(409,'Данные изменились в другом окне. Ваш ввод сохранён на экране. Обновите данные перед повторным сохранением.','CONFLICT');
     return rows[0];
   }
-  async consumeAttempt(key){return this.request('/rest/v1/rpc/arena_consume_login',{method:'POST',json:{p_key:key}})}
-  async clearAttempts(key){await this.request('/rest/v1/arena_login_attempts?key=eq.'+key,{method:'DELETE'})}
-  async createSession(session){
-    await this.request('/rest/v1/arena_sessions',{method:'POST',json:session});
-    await this.request('/rest/v1/arena_sessions?expires_at=lt.'+encodeURIComponent(new Date().toISOString()),{method:'DELETE'});
+  forUser(token){return new SupabaseStore({url:this.url,key:this.key,token,fetchImpl:this.fetch})}
+  async isAdmin(userId){
+    const rows=await this.request('/rest/v1/arena_admins?user_id=eq.'+encodeURIComponent(userId)+'&select=user_id');
+    return rows?.length===1;
   }
-  async getSession(hash){
-    const rows=await this.request('/rest/v1/arena_sessions?token_hash=eq.'+hash+'&select=username,expires_at');
-    return rows?.[0]||null;
-  }
-  async deleteSession(hash){await this.request('/rest/v1/arena_sessions?token_hash=eq.'+hash,{method:'DELETE'})}
   imageUrl(key){return this.url+'/storage/v1/object/public/arena-images/'+encodeURIComponent(key)}
   async uploadImage(key,bytes,mime){
     await this.request('/storage/v1/object/arena-images/'+encodeURIComponent(key),{method:'POST',body:bytes,

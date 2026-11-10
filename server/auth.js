@@ -1,43 +1,44 @@
-import {randomBytes,scrypt as scryptCallback,timingSafeEqual,createHmac} from 'node:crypto';
-import {promisify} from 'node:util';
-const scrypt=promisify(scryptCallback);
+import {randomBytes,timingSafeEqual} from 'node:crypto';
+import {HttpError} from './errors.js';
 export const SESSION_SECONDS=8*60*60;
-export function passwordHashIsValid(value){
-  if(typeof value!=='string')return false;
-  const p=value.split('$');
-  return p.length===6&&p[0]==='scrypt'&&p[1]==='32768'&&p[2]==='8'&&p[3]==='1'&&
-    /^[a-f0-9]{32}$/.test(p[4])&&/^[a-f0-9]{128}$/.test(p[5]);
-}
-export async function hashPassword(password){
-  const salt=randomBytes(16).toString('hex');
-  const key=await scrypt(password,salt,64,{N:32768,r:8,p:1,maxmem:64*1024*1024});
-  return ['scrypt',32768,8,1,salt,key.toString('hex')].join('$');
-}
-export async function verifyPassword(password,hash){
-  if(!passwordHashIsValid(hash)||typeof password!=='string'||Buffer.byteLength(password)>1024)return false;
-  const fields=hash.split('$');
-  const actual=await scrypt(password,fields[4],64,{N:32768,r:8,p:1,maxmem:64*1024*1024});
-  return timingSafeEqual(actual,Buffer.from(fields[5],'hex'));
-}
-export function constantEqual(a,b){
-  if(typeof a!=='string'||typeof b!=='string')return false;
-  const aa=Buffer.from(a),bb=Buffer.from(b);
-  return aa.length===bb.length&&timingSafeEqual(aa,bb);
-}
 export const newToken=()=>randomBytes(32).toString('base64url');
-export const tokenHash=(token,secret)=>createHmac('sha256',secret).update('session:'+token).digest('hex');
-export const csrfToken=(token,secret)=>createHmac('sha256',secret).update('csrf:'+token).digest('base64url');
-export const attemptKey=(ip,secret)=>createHmac('sha256',secret).update('login:'+ip).digest('hex');
-export function cookieName(secure){return secure?'__Host-blaind_session':'blaind_session'}
-export function readCookie(req,secure){
-  const name=cookieName(secure);
-  for(const part of String(req.headers.cookie||'').split(';')){
-    const [key,...value]=part.trim().split('=');
-    if(key===name){const token=value.join('=');return /^[A-Za-z0-9_-]{43}$/.test(token)?token:null}
-  }
-  return null;
+export function constantEqual(a,b){
+ if(typeof a!=='string'||typeof b!=='string')return false;
+ const aa=Buffer.from(a),bb=Buffer.from(b);
+ return aa.length===bb.length&&timingSafeEqual(aa,bb);
 }
-export function sessionCookie(token,secure,clear=false){
-  return cookieName(secure)+'='+(clear?'':token)+'; Path=/; HttpOnly; SameSite=Strict; Max-Age='+
-    (clear?0:SESSION_SECONDS)+(secure?'; Secure':'');
+function cookieName(name,secure){return (secure?'__Host-':'')+'blaind_'+name}
+export function cookies(req,secure){
+ const values=new Map(String(req.headers.cookie||'').split(';').map(p=>{const at=p.indexOf('=');return [p.slice(0,at).trim(),p.slice(at+1)]}));
+ const read=(name,max)=>{const value=values.get(cookieName(name,secure));return value&&value.length<=max&&/^[A-Za-z0-9._-]+$/.test(value)?value:null};
+ return {accessToken:read('access',8192),refreshToken:read('refresh',1024),csrf:read('csrf',100)};
+}
+export function sessionCookies(res,session,secure,clear=false){
+ const values={access:session?.accessToken,refresh:session?.refreshToken,csrf:session?.csrf};
+ res.setHeader('Set-Cookie',Object.entries(values).map(([name,value])=>cookieName(name,secure)+'='+(clear?'':value)+'; Path=/; HttpOnly; SameSite=Strict; Max-Age='+(clear?0:SESSION_SECONDS)+(secure?'; Secure':'')));
+}
+
+// Supabase verifies passwords and access tokens; neither tokens nor passwords are returned to JS.
+export class SupabaseAuth {
+ constructor({url,key,fetchImpl=fetch}){this.url=url;this.key=key;this.fetch=fetchImpl}
+ async request(path,{method='GET',body,token}={}){
+  const response=await this.fetch(this.url+'/auth/v1/'+path,{method,redirect:'error',signal:AbortSignal.timeout(12000),headers:{apikey:this.key,...(token?{Authorization:'Bearer '+token}:{}),...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
+  if(!response.ok){
+   if(response.status===429)throw new HttpError(429,'Слишком много попыток. Попробуйте позже.','RATE_LIMIT');
+   if([400,401,403,422].includes(response.status))throw new HttpError(401,'Неверные данные входа или сессия завершилась.','UNAUTHORIZED');
+   throw new HttpError(503,'Supabase Auth временно недоступен.','AUTH_UNAVAILABLE');
+  }
+  return response.status===204?null:response.json();
+ }
+ async signIn(email,password){
+  if(typeof email!=='string'||email.length>254||!email.includes('@')||typeof password!=='string'||!password||Buffer.byteLength(password)>1024)throw new HttpError(400,'Укажите email и пароль администратора.','VALIDATION');
+  return this.tokens(await this.request('token?grant_type=password',{method:'POST',body:{email:email.trim(),password}}));
+ }
+ tokens(result){
+  if(!result.access_token||!result.refresh_token||!result.user?.id)throw new HttpError(503,'Supabase Auth вернул неполную сессию.','AUTH_UNAVAILABLE');
+  return {accessToken:result.access_token,refreshToken:result.refresh_token,user:result.user};
+ }
+ async refresh(refreshToken){return this.tokens(await this.request('token?grant_type=refresh_token',{method:'POST',body:{refresh_token:refreshToken}}))}
+ async user(accessToken){return this.request('user',{token:accessToken})}
+ async logout(accessToken){await this.request('logout?scope=local',{method:'POST',token:accessToken})}
 }
