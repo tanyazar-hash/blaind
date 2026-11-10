@@ -4,42 +4,44 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#101110">
-  <meta name="description" content="Блаинд ARENA — турниры, рейтинг и лучшие игроки клуба.">
-  <title>BLΛIND ARENA — рейтинг и турниры</title>
+  <meta name="description" content="Блаинд АРЕНА — турниры, рейтинг и лучшие игроки клуба.">
+  <title>БЛАИНД АРЕНА — рейтинг и турниры</title>
   <link rel="icon" href="/assets/club-logo.svg" type="image/svg+xml">
   <link rel="preload" href="/arena/fonts/playfair.woff" as="font" type="font/woff" crossorigin>
   <link rel="preload" href="/arena/fonts/manrope.woff" as="font" type="font/woff" crossorigin>
   <link rel="stylesheet" href="/design.css">
   <link rel="stylesheet" href="/arena/arena.css">
-<link rel="stylesheet" href="/admin/entry.css">
+
+<link rel="stylesheet" href="/shared/site.css">
+<link rel="preload" href="/arena/fonts/playfair-italic.woff" as="font" type="font/woff" crossorigin>
 </head>
-<body class="arena-page">
+<body class="public-page arena-page">
   <a class="skip-link" href="#ranking">Перейти к рейтингу</a>
-  <header class="arena-header">
-    <a class="brand" href="/" aria-label="Блаинд — главная"><img src="/assets/club-logo.svg" alt="Блаинд — спортивный покер" width="600" height="300"></a>
-    <nav aria-label="Основная навигация"><a href="/">Клуб</a><a href="/arena" aria-current="page">ARENA</a><a href="#ranking">Рейтинг</a><a class="nav-cta" href="#tournaments">Турниры</a></nav>
-    <button class="menu" type="button" aria-expanded="false" aria-controls="arena-mobile-nav">МЕНЮ</button>
-    <nav class="mobile-nav" id="arena-mobile-nav" aria-label="Мобильная навигация"><a href="/">Клуб</a><a href="/arena" aria-current="page">ARENA</a><a href="#ranking">Рейтинг</a><a href="#tournaments">Турниры</a></nav>
-  </header>
+  <!-- site:header -->
+<header class="site-header">
+  <a class="brand" href="/" aria-label="БЛАИНД — главная"><img src="/assets/club-logo.svg" alt="БЛАИНД — спортивный покер" width="600" height="300"></a>
+  <nav class="site-nav" aria-label="Основная навигация"><a href="/" >Главная</a><a href="/arena" aria-current="page">Арена</a><a href="/atmosphere/" >Атмосфера</a><a class="nav-cta" href="/#contact">Связаться</a></nav>
+  <button class="menu" type="button" aria-expanded="false" aria-controls="site-mobile-nav">МЕНЮ</button>
+  <nav class="mobile-nav" id="site-mobile-nav" aria-label="Мобильная навигация"><a href="/" >Главная</a><a href="/arena" aria-current="page">Арена</a><a href="/atmosphere/" >Атмосфера</a><a class="nav-cta" href="/#contact">Связаться</a></nav>
+</header>
+<!-- /site:header -->
   <main id="arena-main">
     <section class="arena-hero" aria-labelledby="arena-title">
       <div class="arena-container">
         <div class="hero-layout">
           <div class="arena-intro">
             <p class="eyebrow">БЛАИНД / ИГРА В ЦИФРАХ</p>
-            <h1 id="arena-title">BLΛIND<br><em>ARENA</em></h1>
+            <h1 id="arena-title">БЛАИНД<br><em>АРЕНА</em></h1>
             <p class="arena-lead">Турниры. Рейтинг.<br>Лучшие игроки клуба.</p>
             <div class="arena-actions"><a class="btn" href="#ranking">Рейтинг игроков <span class="arrow-icon" aria-hidden="true"></span></a><a class="arena-textlink" href="#tournaments">Актуальные турниры <span aria-hidden="true">↓</span></a></div>
           </div>
-          <aside class="leaders-panel" aria-labelledby="leaders-title">
-            <div class="arena-suit" aria-hidden="true">♠</div>
-            <div class="leaders-heading"><span id="leaders-title">ВЕРШИНА РЕЙТИНГА</span><span>TOP / 03</span></div>
-            <ol id="leaders-list" class="leaders-list"><li class="leaders-loading">Загружаем рейтинг<span class="loading-line" aria-hidden="true"></span></li></ol>
+          <aside class="arena-stats" aria-label="Арена в цифрах">
+            <a class="arena-stat" href="#ranking"><span class="arena-stat-number" id="players-total" aria-live="polite">—</span><span class="arena-stat-label">игроков в рейтинге</span></a>
+            <a class="arena-stat" href="#tournaments"><span class="arena-stat-number" id="tournaments-total" aria-live="polite">—</span><span class="arena-stat-label">актуальных турниров</span></a>
             <p class="demo-note" data-demo="players">Демонстрационные данные</p>
           </aside>
         </div>
         <div class="arena-hero-bottom">
-          <div class="arena-metrics"><div><span id="players-total">—</span><small>игроков в рейтинге</small></div><div><span id="tournaments-total">—</span><small>турнира в расписании</small></div></div>
           <a href="#ranking" class="scroll-cue">ВАШЕ МЕСТО В ИГРЕ <span aria-hidden="true">↓</span></a>
         </div>
       </div>
@@ -70,14 +72,19 @@
       <div class="arena-container">
         <div class="arena-section-heading arena-reveal">
           <div><p class="section-num">02 — СЛЕДУЮЩИЙ ХОД</p><h2 id="tournaments-title">Актуальные<br><em>турниры.</em></h2></div>
-          <div class="section-meta"><span class="demo-note" data-demo="tournaments">Демонстрационное расписание</span><p id="tournament-timezone">Новосибирск · UTC+7</p></div>
+          <div class="section-meta"><span class="demo-note" data-demo="tournaments">Демонстрационное расписание</span><p id="tournament-timezone">Барнаул · UTC+7</p></div>
         </div>
         <div id="tournaments-message" class="panel-message" role="status"><p>Загружаем расписание…</p><div class="loading-line" aria-hidden="true"></div></div>
         <div id="tournaments-grid" class="tournaments-grid"></div>
       </div>
     </section>
   </main>
-  <footer class="arena-footer"><a class="brand" href="/" aria-label="Блаинд — главная"><img src="/assets/club-logo.svg" alt="Блаинд" width="600" height="300"></a><span>БЛАИНД · СПОРТИВНЫЙ ПОКЕР</span><a href="/">ВЕРНУТЬСЯ В КЛУБ <span class="arrow-icon" aria-hidden="true"></span></a></footer><a class="admin-entry" href="/admin" rel="nofollow">Управление</a>
+  <!-- site:footer -->
+<footer class="site-footer">
+  <div class="site-footer-main"><a class="brand" href="/" aria-label="БЛАИНД — главная"><img src="/assets/club-logo.svg" alt="БЛАИНД" width="600" height="300"></a><nav aria-label="Навигация в подвале"><a href="/" >Главная</a><a href="/arena" aria-current="page">Арена</a><a href="/atmosphere/" >Атмосфера</a><a href="/#contact">Связаться</a></nav></div>
+  <div class="site-footer-bottom"><span>БАРНАУЛ / СПОРТИВНЫЙ ПОКЕР</span><span>ХАРАКТЕР. СТРАТЕГИЯ. ИГРА.</span><a class="admin-entry" href="/admin" rel="nofollow">Управление</a></div>
+</footer>
+<!-- /site:footer -->
   <dialog class="image-viewer" id="image-viewer" aria-labelledby="viewer-title">
     <div class="viewer-heading"><h2 id="viewer-title"></h2><button type="button" id="close-viewer" aria-label="Закрыть изображение"><span aria-hidden="true"></span></button></div>
     <div class="viewer-image-wrap"><img id="viewer-image" alt=""><p id="viewer-error" hidden>Изображение недоступно</p></div>
@@ -85,5 +92,5 @@
   </dialog>
   <noscript><p class="noscript-note">Включите JavaScript, чтобы увидеть рейтинг игроков и расписание турниров.</p></noscript>
   <script type="module" src="/arena/arena.js"></script>
-</body>
+<script type="module" src="/shared/site.js"></script></body>
 </html>

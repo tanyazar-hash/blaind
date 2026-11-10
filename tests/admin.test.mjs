@@ -23,8 +23,11 @@ test('PostgreSQL-backed Supabase Auth admission, CRUD, uploads, conflicts, resta
  const upload=await req('upload','POST',await readFile(new URL('../arena/images/golden-night.webp',import.meta.url)));assert.equal(upload.status,201);
  const t={title:'Test event',startsAt:'2026-12-01T19:00:00+07:00',description:'Test description',details:[{label:'Format',value:'Holdem'}],displayOrder:40,imageAlt:'Poster',...upload.data};saved=await req('tournaments','POST',t);assert.equal(saved.status,200);revision=saved.data.revision;const tid=saved.data.document.tournaments.at(-1).id;
  assert.equal((await req('upload','DELETE',upload.data)).status,409);
- const doc=saved.data.document;doc.hero.titleLine1='Тестовая арена';saved=await req('hero','PUT',{hero:doc.hero,settings:doc.settings});assert.equal(saved.status,200);revision=saved.data.revision;
- const publicData=await(await fetch(base+'/api/arena')).json();assert.equal(publicData.hero.hero.titleLine1,'Тестовая арена');assert.equal(publicData.players.players.at(-1).points,100000);
+ const before=saved.data.document;
+ const denied=await req('hero','PUT',{hero:{...before.hero,titleLine1:'Forbidden edit'},settings:before.settings});assert.equal(denied.status,404);
+ const publicData=await(await fetch(base+'/api/arena')).json();assert.equal(publicData.hero.hero.titleLine1,before.hero.titleLine1);assert.equal(publicData.players.players.at(-1).points,100000);
+ saved=await req('tournaments','PUT',{...saved.data.document.tournaments.find(t=>t.id===tid),status:'completed'});assert.equal(saved.status,200);assert.equal(saved.data.document.tournaments.find(t=>t.id===tid).status,'completed');revision=saved.data.revision;
+ assert.equal((await req('tournaments','PUT',{...saved.data.document.tournaments.find(t=>t.id===tid),endsAt:'2020-01-01T00:00:00Z'})).status,400);
  await new Promise(resolve=>server.close(resolve));await store.db.close();store=await pgStore(dir,{identity:auth.identity});await start();assert.equal((await req('snapshot')).data.document.players.at(-1).id,id);
  saved=await req('tournaments','DELETE',{id:tid});assert.equal(saved.status,200);revision=saved.data.revision;await assert.rejects(readFile(dir+'/images/'+upload.data.imageStorageKey));
  saved=await req('players','DELETE',{id});assert.equal(saved.status,200);revision=saved.data.revision;

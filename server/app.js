@@ -4,7 +4,7 @@ import {supabaseConfig} from './config.js';
 import {defaultDocument,publicSnapshot} from './defaults.js';
 import {HttpError,fail} from './errors.js';
 import {SupabaseAuth,constantEqual,newToken,cookies,sessionCookies} from './auth.js';
-import {playerInput,tournamentInput,heroInput,settingsInput,validId,imageKey,inspectImage,MAX_IMAGE_BYTES} from './validation.js';
+import {playerInput,tournamentInput,validId,imageKey,inspectImage,MAX_IMAGE_BYTES} from './validation.js';
 
 async function bytes(req,limit){
   if(req.body!==undefined){
@@ -141,15 +141,11 @@ export function createArenaBackend({store:providedStore,auth:providedAuth,env=pr
       if(references(row.document).has(key))fail(409,'Изображение используется на сайте. Сначала сохраните его замену или удаление.','IMAGE_IN_USE');
       await store.deleteImage(key);return response(res,200,{ok:true});
     }
-    if(!['hero','players','tournaments','order'].includes(resource))fail(404,'Действие не найдено.','NOT_FOUND');
+    if(!['players','tournaments','order'].includes(resource))fail(404,'Действие не найдено.','NOT_FOUND');
     if(!['POST','PUT','DELETE'].includes(req.method))fail(405,'Метод не поддерживается.','METHOD');
     const input=await jsonBody(req),row=await store.readDocument();
     const version=expectedVersion(req,row),document=structuredClone(row.document),at=new Date(now()).toISOString();
-    if(resource==='hero'&&req.method==='PUT'){
-      const hero=heroInput(input.hero);
-      verifyImage({imageUrl:hero.backgroundImageUrl,imageStorageKey:hero.backgroundImageStorageKey},input,s,row.document);
-      document.hero=hero;document.settings=settingsInput(input.settings);document.heroUpdatedAt=at;
-    }else if(resource==='order'&&req.method==='PUT'){
+    if(resource==='order'&&req.method==='PUT'){
       const ids=input.ids;
       if(!Array.isArray(ids)||ids.length!==document.tournaments.length||new Set(ids).size!==ids.length||
         ids.some(id=>!document.tournaments.some(t=>t.id===id)))fail(400,'Проверьте порядок турниров.','VALIDATION');

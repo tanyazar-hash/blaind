@@ -29,7 +29,7 @@ async function loaded(page){
   assert.equal(await page.locator('#ranking-body tr').first().locator('.player-name').innerText(),'NORD');
   assert.equal(await page.locator('#ranking-body .rank-top').count(),3);
   assert.match(await page.locator('#ranking-updated').innerText(),/10 ноября 2026/);
-  assert.equal(await page.locator('#tournament-timezone').innerText(),'Новосибирск · UTC+7');
+  assert.equal(await page.locator('#tournament-timezone').innerText(),'Барнаул · UTC+7');
   assert.equal(await page.locator('.tournament-date span').first().innerText(),'19:00');
   assert.equal(await page.locator('input[type=file]').count(),0);
   await page.screenshot({path:path.join(output,'arena-hero-final.png')});
@@ -39,7 +39,7 @@ async function loaded(page){
   await page.locator('#player-search').fill('  mIRa  ');
   assert.equal(await page.locator('#ranking-body tr').count(),1);
   assert.equal(await page.locator('#ranking-body tr').first().getAttribute('data-rank'),'2');
-  assert.equal(await page.locator('#leaders-list .leader-name').first().innerText(),'NORD');
+  assert.equal(await page.locator('#players-total').innerText(),'12');
   await page.locator('#player-search').fill('no_such_player');
   assert.equal(await page.locator('#ranking-table-wrap').isVisible(),false);
   await page.locator('#ranking-message button').click();
@@ -91,7 +91,7 @@ async function loaded(page){
    if(width<=600){
     await mobile.locator('.menu').click();
     assert.equal(await mobile.locator('.menu').getAttribute('aria-expanded'),'true');
-    await mobile.locator('#arena-mobile-nav a[href="#ranking"]').click();
+    await mobile.keyboard.press('Escape');
     assert.equal(await mobile.locator('.menu').getAttribute('aria-expanded'),'false');
    }
    await mobile.evaluate(()=>scrollTo({top:document.getElementById('ranking').offsetTop,behavior:'instant'}));
@@ -171,7 +171,7 @@ async function loaded(page){
   await navigation.setViewportSize({width:390,height:844});
   await navigation.goto(base+'/');
   await navigation.locator('.menu').click();
-  await navigation.locator('#mobile-nav a[href="/arena"]').click();
+  await navigation.locator('#site-mobile-nav a[href="/arena"]').click();
   await navigation.waitForURL(/\/arena\/?$/);
   await navigation.locator('#ranking-body tr').first().waitFor();
   await navigation.close();

@@ -1,3 +1,5 @@
+import {revealContent as reveal,clubText} from '/shared/site.js';
+import {activeTournaments} from './tournaments.js';
 import {arenaDataSource,resolveImageUrl} from './data-source.js';
 import {rankPlayers,selectPlayers} from './ranking.js';
 
@@ -10,18 +12,18 @@ const motion=matchMedia('(prefers-reduced-motion: reduce)');
 const defaultZone='Asia/Novosibirsk';
 const state={ranked:[],query:'',sortBy:'points',direction:'desc',rows:new Map()};
 const rowAnimations=new Set(), detailAnimations=new Map();
-let revealObserver,returnFocus=null;
+let returnFocus=null, tournamentPayload=null, activeTournamentIds;
 const tableWrap=$('#ranking-table-wrap'), tbody=$('#ranking-body');
 const rankingMessage=$('#ranking-message'), tournamentsMessage=$('#tournaments-message');
 const search=$('#player-search'),sort=$('#ranking-sort'),direction=$('#sort-direction');
 const summary=$('#ranking-summary'),clear=$('#clear-search');
 const viewer=$('#image-viewer'),viewerImage=$('#viewer-image'),viewerError=$('#viewer-error');
-const menu=$('.arena-header .menu'),mobileNav=$('#arena-mobile-nav');
+
 
 function element(tag,className,text){
   const node=document.createElement(tag);
   if(className)node.className=className;
-  if(text!==undefined)node.textContent=text;
+  if(text!==undefined)node.textContent=clubText(text);
   return node;
 }
 function word(count,forms){return forms[{one:0,few:1,other:2}[plural.select(count)]??2]}
@@ -44,34 +46,10 @@ function setFiltersEnabled(enabled){
   search.disabled=!enabled;sort.disabled=!enabled;direction.disabled=!enabled;
   document.querySelectorAll('[data-column-sort]').forEach(button=>{button.disabled=!enabled});
 }
-function reveal(){
-  if(motion.matches||!('IntersectionObserver' in window)){
-    document.body.classList.remove('js-motion');
-    return;
-  }
-  document.body.classList.add('js-motion');
-  if(!revealObserver)revealObserver=new IntersectionObserver(entries=>{
-    for(const entry of entries)if(entry.isIntersecting){
-      entry.target.classList.add('is-visible');revealObserver.unobserve(entry.target);
-    }
-  },{threshold:.08});
-  document.querySelectorAll('.arena-reveal:not(.is-visible)').forEach(node=>revealObserver.observe(node));
-}
-
-function showLeaders(){
-  const list=$('#leaders-list');list.replaceChildren();
-  const count=state.ranked.length;
-  $('#players-total').textContent=numbers.format(count);
-  $('#players-total').nextElementSibling.textContent=word(count,['игрок','игрока','игроков'])+' в рейтинге';
-  if(!count){list.append(element('li','leaders-loading','Рейтинг формируется'));return}
-  for(const player of state.ranked.slice(0,3)){
-    const row=element('li','leader-line');
-    const points=element('span','leader-points',numbers.format(player.points));
-    points.append(element('small','','ОЧК.'));
-    row.append(element('span','leader-place',String(player.rank).padStart(2,'0')),
-      element('span','leader-name',player.nickname),points);
-    list.append(row);
-  }
+function showPlayerTotal(){
+ const count=state.ranked.length;
+ $('#players-total').textContent=numbers.format(count);
+ $('#players-total').nextElementSibling.textContent=word(count,['игрок','игрока','игроков'])+' в рейтинге';
 }
 /** @param {RankedPlayer} player */
 function playerRow(player){
@@ -143,11 +121,10 @@ async function loadPlayers(provided){
     updated.dateTime=payload.updatedAt;
     updated.textContent=formatDate(payload.updatedAt,{day:'numeric',month:'long',year:'numeric'});
     setDemo('players',payload.isDemo);
-    showLeaders();setFiltersEnabled(true);renderRanking();
+    showPlayerTotal();setFiltersEnabled(true);renderRanking();
   }catch(error){
     console.warn('Arena rating unavailable:',error);
     summary.textContent='Рейтинг временно недоступен';
-    $('#leaders-list').replaceChildren(element('li','leaders-loading','Рейтинг временно недоступен'));
     $('#players-total').textContent='—';
     panelMessage(rankingMessage,'Не удалось загрузить рейтинг. Попробуйте ещё раз.',loadPlayers,'Повторить',true);
   }finally{$('#ranking').setAttribute('aria-busy','false')}
@@ -172,10 +149,10 @@ function toggleDetails(button,panel){
 }
 function openImage(tournament,url,caption,trigger){
   returnFocus=trigger;
-  $('#viewer-title').textContent=tournament.title;
+  $('#viewer-title').textContent=clubText(tournament.title);
   $('#viewer-caption').textContent=caption;
   viewerError.hidden=true;viewerImage.hidden=false;
-  viewerImage.alt=tournament.imageAlt||('Афиша турнира '+tournament.title);
+  viewerImage.alt=clubText(tournament.imageAlt)||('Афиша турнира '+tournament.title);
   viewerImage.onerror=()=>{viewerImage.hidden=true;viewerError.hidden=false};
   viewerImage.src=url;
   viewer.showModal();document.body.classList.add('image-open');
@@ -197,7 +174,7 @@ function tournamentCard(tournament,zone){
   const caption=date+' · '+time+' · '+zoneName(zone,tournament.startsAt);
   const imageUrl=resolveImageUrl(tournament.imageUrl);
   if(imageUrl){
-    const image=element('img');image.alt=tournament.imageAlt||('Афиша турнира '+tournament.title);
+    const image=element('img');image.alt=clubText(tournament.imageAlt)||('Афиша турнира '+tournament.title);
     image.loading='lazy';image.decoding='async';image.width=1200;image.height=800;
     image.style.objectFit=tournament.imageFit||'cover';
     if(tournament.imageFocus)image.style.objectPosition=tournament.imageFocus.x+'% '+tournament.imageFocus.y+'%';
@@ -225,7 +202,7 @@ function tournamentCard(tournament,zone){
   return card;
 }
 function zoneName(zone,at){
-  const names={'Asia/Novosibirsk':'Новосибирск','Europe/Moscow':'Москва'};
+  const names={'Asia/Novosibirsk':'Барнаул','Asia/Barnaul':'Барнаул','Europe/Moscow':'Москва'};
   const offset=new Intl.DateTimeFormat('ru',{timeZone:zone,timeZoneName:'shortOffset'})
     .formatToParts(new Date(at)).find(part=>part.type==='timeZoneName').value.replace('GMT','UTC');
   return names[zone]?names[zone]+' · '+offset:offset;
@@ -236,10 +213,11 @@ async function loadTournaments(provided){
   const grid=$('#tournaments-grid');grid.replaceChildren();
   try{
     const payload=provided?.tournaments?provided:await arenaDataSource.getTournaments();
-    const tournaments=[...payload.tournaments].sort((a,b)=>
-      a.displayOrder-b.displayOrder || Date.parse(a.startsAt)-Date.parse(b.startsAt) || a.id.localeCompare(b.id));
+    tournamentPayload=payload;
+    const tournaments=activeTournaments(payload.tournaments);
+    activeTournamentIds=tournaments.map(t=>t.id).join('|');
     $('#tournaments-total').textContent=numbers.format(tournaments.length);
-    $('#tournaments-total').nextElementSibling.textContent=word(tournaments.length,['турнир','турнира','турниров'])+' в расписании';
+    $('#tournaments-total').nextElementSibling.textContent=word(tournaments.length,['турнир','турнира','турниров'])+' сейчас в арене';
     $('#tournament-timezone').textContent=zoneName(payload.timeZone,payload.updatedAt);
     setDemo('tournaments',payload.isDemo);
     if(!tournaments.length){panelMessage(tournamentsMessage,'Новые турниры скоро появятся.');return}
@@ -284,24 +262,6 @@ viewer.addEventListener('close',()=>{
   if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});
   returnFocus=null;
 });
-function closeMenu(){mobileNav.classList.remove('open');menu.setAttribute('aria-expanded','false')}
-menu.addEventListener('click',()=>{
-  const open=mobileNav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));
-});
-mobileNav.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeMenu));
-document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenu()});
-document.addEventListener('click',event=>{if(!$('.arena-header').contains(event.target))closeMenu()});
-window.addEventListener('resize',()=>{if(innerWidth>600)closeMenu()});
-window.addEventListener('pageshow',()=>document.body.classList.remove('page-exit'));
-document.addEventListener('click',event=>{
-  if(motion.matches||event.defaultPrevented||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-  const link=event.target.closest('a[href]');
-  if(!link||link.target||link.hasAttribute('download'))return;
-  const url=new URL(link.href);
-  if(url.origin!==location.origin||url.pathname===location.pathname||url.pathname===location.pathname.replace(/\/$/,''))return;
-  event.preventDefault();document.body.classList.add('page-exit');
-  setTimeout(()=>location.assign(url.href),145);
-});
 motion.addEventListener('change',()=>{
   if(motion.matches){
     for(const animation of rowAnimations)animation.cancel();rowAnimations.clear();
@@ -315,18 +275,9 @@ void loadPlayers();
 void loadTournaments();
 
 let liveRevision, liveBusy=false, livePlayers, liveTournaments;
-function applyHero(h){
- $('.arena-intro .eyebrow').textContent=h.eyebrow;
- const title=$('#arena-title');title.replaceChildren(document.createTextNode(h.titleLine1),element('br'),element('em','',h.titleLine2));
- $('.arena-lead').textContent=h.subtitle;$('.arena-lead').style.whiteSpace='pre-line';
- let description=$('#hero-description');if(!description){description=element('p','arena-lead');description.id='hero-description';$('.arena-lead').after(description)}description.textContent=h.description;description.hidden=!h.description;
- for(const [selector,label,href]of [['.arena-actions .btn',h.primaryLabel,h.primaryHref],['.arena-textlink',h.secondaryLabel,h.secondaryHref]]){const a=$(selector);a.firstChild.textContent=label+' ';a.href=href}
- $('#leaders-title').textContent=h.leadersTitle;$('.leaders-heading').lastElementChild.textContent=h.leadersTag;$('.demo-note[data-demo="players"]').textContent=h.demoLabel;
- $('.scroll-cue').firstChild.textContent=h.scrollCue+' ';
- for(const [id,key]of [['players-total','playersMetricLabel'],['tournaments-total','tournamentsMetricLabel']])if(h[key])$('#'+id).nextElementSibling.textContent=h[key];
- let background=$('#hero-background');if(!background){background=element('img');background.id='hero-background';background.alt='';Object.assign(background.style,{position:'absolute',inset:'0',width:'100%',height:'100%',objectFit:'cover',pointerEvents:'none',zIndex:'0'});$('.arena-hero').prepend(background);$('.arena-hero').style.position='relative';$('.arena-hero .arena-container').style.position='relative'}
- const url=resolveImageUrl(h.backgroundImageUrl);background.hidden=!url;if(url)background.src=url;background.style.opacity=String(h.backgroundOpacity);
+function refreshTournamentClock(){
+ if(tournamentPayload&&activeTournaments(tournamentPayload.tournaments).map(t=>t.id).join('|')!==activeTournamentIds)void loadTournaments(tournamentPayload);
 }
-async function refreshLive(){if(document.hidden||liveBusy)return;liveBusy=true;try{const s=await arenaDataSource.getSnapshot();if(!s||s.revision===liveRevision)return;const expanded=[...document.querySelectorAll('.details-toggle[aria-expanded="true"]')].map(n=>n.closest('[data-tournament-id]').dataset.tournamentId);const playersKey=JSON.stringify(s.players),tournamentsKey=JSON.stringify(s.tournaments);await Promise.all([playersKey!==livePlayers?loadPlayers(s.players):null,tournamentsKey!==liveTournaments?loadTournaments(s.tournaments):null]);livePlayers=playersKey;liveTournaments=tournamentsKey;applyHero(s.hero.hero);for(const id of expanded){const card=[...document.querySelectorAll('[data-tournament-id]')].find(n=>n.dataset.tournamentId===id);if(card?.querySelector('.details-toggle')){card.querySelector('.details-toggle').setAttribute('aria-expanded','true');card.querySelector('.details-content').hidden=false}}liveRevision=s.revision}catch{/* Keep the last successfully rendered data during a network interruption. */}finally{liveBusy=false}}
+async function refreshLive(){if(document.hidden||liveBusy)return;liveBusy=true;try{const s=await arenaDataSource.getSnapshot();if(!s||s.revision===liveRevision){refreshTournamentClock();return}const expanded=[...document.querySelectorAll('.details-toggle[aria-expanded="true"]')].map(n=>n.closest('[data-tournament-id]').dataset.tournamentId);const playersKey=JSON.stringify(s.players),tournamentsKey=JSON.stringify(s.tournaments);await Promise.all([playersKey!==livePlayers?loadPlayers(s.players):null,tournamentsKey!==liveTournaments?loadTournaments(s.tournaments):null]);livePlayers=playersKey;liveTournaments=tournamentsKey;for(const id of expanded){const card=[...document.querySelectorAll('[data-tournament-id]')].find(n=>n.dataset.tournamentId===id);if(card?.querySelector('.details-toggle')){card.querySelector('.details-toggle').setAttribute('aria-expanded','true');card.querySelector('.details-content').hidden=false}}liveRevision=s.revision}catch{refreshTournamentClock();/* Keep the last successfully rendered data during a network interruption. */}finally{liveBusy=false}}
 setInterval(refreshLive,4000);window.addEventListener('focus',refreshLive);document.addEventListener('visibilitychange',refreshLive);if('BroadcastChannel'in window)new BroadcastChannel('blaind-arena').onmessage=refreshLive;
 void refreshLive();

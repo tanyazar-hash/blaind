@@ -29,6 +29,8 @@ export function validateTournaments(value) {
   unique(value.tournaments);
   for(const tournament of value.tournaments){
     ensure(object(tournament)&&text(tournament.title)&&date(tournament.startsAt)&&text(tournament.description),'Invalid tournament');
+    ensure(tournament.status===undefined||['scheduled','active','completed','cancelled'].includes(tournament.status),'Invalid tournament status');
+    ensure(tournament.endsAt===undefined||tournament.endsAt===null||date(tournament.endsAt)&&Date.parse(tournament.endsAt)>Date.parse(tournament.startsAt),'Invalid tournament ending');
     ensure(integer(tournament.displayOrder)&&Array.isArray(tournament.details),'Invalid tournament order or details');
     ensure(tournament.imageUrl===null||typeof tournament.imageUrl==='string','Invalid image URL field');
     ensure(typeof tournament.imageAlt==='string','Invalid image description');

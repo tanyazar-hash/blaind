@@ -1,11 +1,6 @@
-@font-face{font-family:Manrope;src:url('/arena/fonts/manrope.woff') format('woff');font-weight:200 800;font-display:swap}
-@font-face{font-family:'Playfair Display';src:url('/arena/fonts/playfair.woff') format('woff');font-weight:400 900;font-display:swap}
-@font-face{font-family:'Playfair Display';src:url('/arena/fonts/playfair-italic.woff') format('woff');font-weight:400 900;font-style:italic;font-display:swap}
 html:has(.atmosphere-page){scrollbar-gutter:stable}
 .atmosphere-page{--atm-edge:8%;--atm-gap:clamp(30px,5vw,76px);background:#101110}
 .atmosphere-page main{position:relative;z-index:2}
-.atmosphere-page .atm-header{position:relative;border-bottom:1px solid var(--line);background:transparent}
-.atm-header [aria-current=page]{color:var(--gold)}
 .atm-sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 .atm-skip{position:fixed;top:12px;left:12px;z-index:100;background:var(--gold);color:var(--bg);padding:15px;clip-path:inset(100%)}
 .atm-skip:focus{clip-path:none}
@@ -55,18 +50,12 @@ html:has(.atmosphere-page){scrollbar-gutter:stable}
 .atm-memory-copy{font:400 clamp(29px,3vw,44px)/1.35 'Playfair Display',Georgia,serif;letter-spacing:-.025em;margin:40px 0 0}
 .atm-memory-copy em{color:var(--gold)}
 .atm-people-final{grid-column:7/13;margin-top:125px}
-.atmosphere-page section.atm-finale{min-height:88svh;padding:120px var(--atm-edge);display:flex;align-items:center;justify-content:center;text-align:center;background:#0d0f0d}
+.atmosphere-page section.atm-finale{min-height:88svh;padding:120px var(--atm-edge);display:flex;align-items:center;justify-content:center;text-align:center;background:transparent}
 .atm-finale-inner{width:100%;max-width:1150px}
 .atm-finale h2{font-size:clamp(43px,5.6vw,86px);line-height:1.16;letter-spacing:-.045em;margin:35px 0 45px;text-wrap:balance}
 .atm-finale h2>span,.atm-finale h2>em{display:block}.atm-finale h2 em{color:var(--gold);margin-top:.12em}
 .atm-home-link{display:inline-flex;align-items:center;gap:28px;font-size:9px;letter-spacing:.2em;padding:17px 0;border-bottom:1px solid #b99a6566;color:var(--paper);transition:color .25s,gap .25s}
 .atm-home-link:hover{color:var(--gold);gap:38px}
-.atm-enhanced .atm-reveal{transition:opacity .8s ease,transform 1s cubic-bezier(.2,.65,.3,1)}
-.atm-enhanced .atm-reveal:not(.is-visible){opacity:0;transform:translateY(30px)}
-.atm-enhanced .atm-title-line>span,.atm-enhanced .atm-title-line>em{animation:atm-title-in 1.15s cubic-bezier(.18,.65,.27,1) both}.atm-enhanced .atm-title-line>em{animation-delay:.16s}
-.atm-enhanced .atm-hero-description,.atm-enhanced .atm-hero-eyebrow{animation:atm-copy-in 1.2s .2s ease both}
-@keyframes atm-title-in{from{opacity:0;transform:translateY(105%) rotate(1deg)}to{opacity:1;transform:translateY(0) rotate(0)}}
-@keyframes atm-copy-in{from{opacity:0}to{opacity:1}}
 .atm-viewer{position:fixed;inset:0;width:100%;max-width:none;height:100dvh;max-height:none;margin:0;padding:25px 4%;border:0;background:#090b09f7;color:var(--paper);overflow:hidden;opacity:0;transition:opacity .22s;touch-action:pan-y}
 .atm-viewer::backdrop{background:#090b09;opacity:0;transition:opacity .22s}.atm-viewer.is-open,.atm-viewer.is-open::backdrop{opacity:1}
 .atm-viewer[open]{display:flex;flex-direction:column}.atm-viewer-bar,.atm-viewer-bottom{display:flex;justify-content:space-between;align-items:center;gap:20px}

@@ -1,19 +1,3 @@
-const menu = document.querySelector('.menu');
-const mobileNav = document.querySelector('.mobile-nav');
-menu.addEventListener('click', () => {
-  const open = mobileNav.classList.toggle('open');
-  menu.setAttribute('aria-expanded', String(open));
-});
-function closeMenu() {
-  mobileNav.classList.remove('open');
-  menu.setAttribute('aria-expanded', 'false');
-}
-mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
-const observer = new IntersectionObserver(entries => entries.forEach(entry => {
-  if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); }
-}), { threshold: .1 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 document.querySelector('#contact-button').addEventListener('click', e => {
   e.preventDefault();
   alert('Контакт клуба пока не указан. После получения официального адреса или Telegram заменим эту заглушку.');
@@ -39,11 +23,11 @@ function layout(snap = false) {
   const finalScroll = Math.min(sections[4].offsetTop, bottom);
   const finalY = space.getBoundingClientRect().top + scrollY + space.offsetHeight / 2 - finalScroll;
   const poses = [
-    {x:w*(mobile ? .60 : .73), y:mobile ? 230 : h*.49, s:1, rx:18, ry:-24, rz:-16},
-    {x:w*(mobile ? .5 : .73), y:mobile ? 600 : h*.42, s:mobile ? .88 : .82, rx:30, ry:-154, rz:10},
-    {x:w*(mobile ? .5 : .26), y:mobile ? 430 : h*.37, s:mobile ? .72 : .82, rx:22, ry:-214, rz:-14},
-    {x:w*(mobile ? .58 : .78), y:mobile ? 175 : h*.43, s:.66, rx:-12, ry:-330, rz:10},
-    {x:w*.5, y:finalY, s:mobile ? .70 : .50, rx:0, ry:-360, rz:0}
+    {x:w*(mobile ? .73 : .79), y:mobile ? 170 : h*.47, s:mobile ? .72 : .88, rx:18, ry:-24, rz:-16},
+    {x:w*(mobile ? .78 : .77), y:mobile ? h*.84 : h*.42, s:mobile ? .55 : .75, rx:30, ry:-154, rz:10},
+    {x:w*(mobile ? .78 : .24), y:mobile ? h*.78 : h*.37, s:mobile ? .52 : .76, rx:22, ry:-214, rz:-14},
+    {x:w*(mobile ? .72 : .81), y:mobile ? 175 : h*.43, s:mobile ? .5 : .62, rx:-12, ry:-330, rz:10},
+    {x:w*.5, y:finalY, s:mobile ? .60 : .47, rx:0, ry:-360, rz:0}
   ];
   chapters = sections.map((section, i) => ({
     enter:i === 0 ? 0 : Math.max(0, Math.min(section.offsetTop - h*.45, bottom - 32)),
@@ -174,8 +158,9 @@ function render(time) {
   if (moving || dropStart !== null) requestFrame();
 }
 
+document.addEventListener('site:layout',()=>layout());
 window.addEventListener('scroll', requestFrame, {passive:true});
-window.addEventListener('resize', () => { layout(); closeMenu(); });
+window.addEventListener('resize', () => { layout(); });
 window.addEventListener('pageshow', event => layout(event.persisted));
 document.addEventListener('visibilitychange', () => { lastTime = 0; if (!document.hidden) requestFrame(); });
 motion.addEventListener('change', () => {

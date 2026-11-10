@@ -1,22 +1,6 @@
 const $=selector=>document.querySelector(selector);
 const motion=matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer=matchMedia('(min-width: 601px) and (pointer: fine)');
-const menu=$('.atm-header .menu'),navigation=$('#atm-mobile-nav');
-function closeMenu(){navigation.classList.remove('open');menu.setAttribute('aria-expanded','false')}
-menu.addEventListener('click',()=>menu.setAttribute('aria-expanded',String(navigation.classList.toggle('open'))));
-navigation.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeMenu));
-document.addEventListener('click',event=>{if(!$('.atm-header').contains(event.target))closeMenu()});
-document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenu()});
-window.addEventListener('resize',()=>{if(innerWidth>600)closeMenu()},{passive:true});
-
-// Content is fully visible without JavaScript. Enhancement never owns the image URLs.
-if('IntersectionObserver' in window){
- document.body.classList.add('atm-enhanced');
- const reveals=new IntersectionObserver(entries=>{
-  for(const entry of entries)if(entry.isIntersecting){entry.target.classList.add('is-visible');reveals.unobserve(entry.target)}
- },{threshold:.06});
- document.querySelectorAll('.atm-reveal').forEach(node=>reveals.observe(node));
-}
 const photos=[...document.querySelectorAll('.atm-frame')];
 const nearViewport=new Set();let scrollFrame=0;
 function paintParallax(){

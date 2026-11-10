@@ -5,26 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101110">
   <meta name="description" content="Атмосфера Блаинд — люди, детали и моменты за одним столом. Фотографии покерного клуба.">
-  <title>Атмосфера BLΛIND — Блаинд</title>
+  <title>Атмосфера БЛАИНД — Блаинд</title>
   <link rel="preload" href="/arena/fonts/manrope.woff" as="font" type="font/woff" crossorigin>
   <link rel="preload" href="/arena/fonts/playfair.woff" as="font" type="font/woff" crossorigin>
   <link rel="stylesheet" href="/design.css">
   <link rel="stylesheet" href="/atmosphere/atmosphere.css">
+<link rel="stylesheet" href="/shared/site.css">
+<link rel="icon" href="/assets/club-logo.svg" type="image/svg+xml">
+<link rel="preload" href="/arena/fonts/playfair-italic.woff" as="font" type="font/woff" crossorigin>
 </head>
-<body class="atmosphere-page">
+<body class="public-page atmosphere-page">
   <a class="atm-skip" href="#club-moments">Перейти к истории</a>
-  <header class="atm-header">
-    <a class="brand" href="/" aria-label="Блаинд — главная"><img src="/assets/club-logo.svg" width="600" height="300" alt="Блаинд"></a>
-    <nav aria-label="Основная навигация"><a href="/">Клуб</a><a href="/atmosphere/" aria-current="page">Атмосфера</a><a href="/arena">ARENA</a><a href="/#contact" class="nav-cta">Связаться</a></nav>
-    <button class="menu" type="button" aria-expanded="false" aria-controls="atm-mobile-nav">МЕНЮ</button>
-    <nav class="mobile-nav" id="atm-mobile-nav" aria-label="Мобильная навигация"><a href="/">Клуб</a><a href="/atmosphere/" aria-current="page">Атмосфера</a><a href="/arena">ARENA</a><a href="/#contact">Связаться</a></nav>
-  </header>
+  <!-- site:header -->
+<header class="site-header">
+  <a class="brand" href="/" aria-label="БЛАИНД — главная"><img src="/assets/club-logo.svg" alt="БЛАИНД — спортивный покер" width="600" height="300"></a>
+  <nav class="site-nav" aria-label="Основная навигация"><a href="/" >Главная</a><a href="/arena" >Арена</a><a href="/atmosphere/" aria-current="page">Атмосфера</a><a class="nav-cta" href="/#contact">Связаться</a></nav>
+  <button class="menu" type="button" aria-expanded="false" aria-controls="site-mobile-nav">МЕНЮ</button>
+  <nav class="mobile-nav" id="site-mobile-nav" aria-label="Мобильная навигация"><a href="/" >Главная</a><a href="/arena" >Арена</a><a href="/atmosphere/" aria-current="page">Атмосфера</a><a class="nav-cta" href="/#contact">Связаться</a></nav>
+</header>
+<!-- /site:header -->
   <main>
     <section class="atm-scene atm-hero" id="atmosphere" aria-labelledby="atm-title">
 
       <div class="atm-hero-copy">
         <p class="eyebrow atm-hero-eyebrow">БЛАИНД / МЕСТО, КУДА ВОЗВРАЩАЮТСЯ</p>
-        <h1 id="atm-title"><span class="atm-title-line"><span>АТМОСФЕРА</span></span><span class="atm-title-line"><em>BLΛIND</em></span></h1>
+        <h1 id="atm-title"><span class="atm-title-line"><span>АТМОСФЕРА</span></span><span class="atm-title-line"><em>БЛАИНД</em></span></h1>
         <p class="atm-hero-description">Здесь важна не только игра.<br>Но и те, с кем делишь этот вечер.</p>
       </div>
       <div class="atm-hero-bottom"><a href="#club-moments" class="atm-scroll">ПРОДОЛЖИТЬ ИСТОРИЮ <span aria-hidden="true">↓</span></a><span class="atm-location">НОВОСИБИРСК / СПОРТИВНЫЙ ПОКЕР</span></div>
@@ -119,12 +124,17 @@
       </div>
     </section>
   </main>
-  <footer><a class="brand" href="/" aria-label="Блаинд — главная"><img src="/assets/club-logo.svg" width="600" height="300" alt="Блаинд"></a><span>БЛАИНД · СПОРТИВНЫЙ ПОКЕР</span><a href="/arena">ХАРАКТЕР. СТРАТЕГИЯ. ИГРА.</a></footer>
+  <!-- site:footer -->
+<footer class="site-footer">
+  <div class="site-footer-main"><a class="brand" href="/" aria-label="БЛАИНД — главная"><img src="/assets/club-logo.svg" alt="БЛАИНД" width="600" height="300"></a><nav aria-label="Навигация в подвале"><a href="/" >Главная</a><a href="/arena" >Арена</a><a href="/atmosphere/" aria-current="page">Атмосфера</a><a href="/#contact">Связаться</a></nav></div>
+  <div class="site-footer-bottom"><span>БАРНАУЛ / СПОРТИВНЫЙ ПОКЕР</span><span>ХАРАКТЕР. СТРАТЕГИЯ. ИГРА.</span><a class="admin-entry" href="/admin" rel="nofollow">Управление</a></div>
+</footer>
+<!-- /site:footer -->
   <dialog id="atm-viewer" class="atm-viewer" aria-labelledby="atm-viewer-caption" aria-describedby="atm-viewer-help">
     <div class="atm-viewer-bar"><span class="atm-small-label">АТМОСФЕРА / БЛАИНД</span><button class="atm-viewer-close" type="button" aria-label="Закрыть просмотр">ЗАКРЫТЬ <span aria-hidden="true">×</span></button></div>
     <div class="atm-viewer-stage"><button class="atm-viewer-prev" type="button" aria-label="Предыдущее фото">←</button><div class="atm-viewer-image-wrap"><img id="atm-viewer-image" alt=""><p id="atm-viewer-error" hidden>Не удалось загрузить фото.<br><a id="atm-viewer-original" href="">Открыть оригинал</a></p></div><button class="atm-viewer-next" type="button" aria-label="Следующее фото">→</button></div>
     <div class="atm-viewer-bottom"><p id="atm-viewer-caption" aria-live="polite"></p><span id="atm-viewer-count"></span></div><p id="atm-viewer-help">Листайте стрелками или свайпом. Esc — закрыть.</p>
   </dialog>
   <script type="module" src="/atmosphere/atmosphere.js"></script>
-</body>
+<script type="module" src="/shared/site.js"></script></body>
 </html>

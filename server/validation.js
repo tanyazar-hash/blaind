@@ -30,11 +30,18 @@ export function tournamentInput(input,id){
   if(!input||typeof input!=='object')throw new HttpError(400,'Неверные данные турнира.','VALIDATION');
   if(typeof input.startsAt!=='string'||!/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(input.startsAt)||!Number.isFinite(Date.parse(input.startsAt)))throw new HttpError(400,'Укажите дату, время и часовой пояс.','VALIDATION');
   if(!Array.isArray(input.details)||input.details.length>20)throw new HttpError(400,'Не более 20 строк дополнительной информации.','VALIDATION');
+  const status=input.status||'scheduled';
+  if(!['scheduled','active','completed','cancelled'].includes(status))throw new HttpError(400,'Неверный статус турнира.','VALIDATION');
+  let endsAt=null;
+  if(input.endsAt){
+    if(typeof input.endsAt!=='string'||!/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(input.endsAt)||!Number.isFinite(Date.parse(input.endsAt))||Date.parse(input.endsAt)<=Date.parse(input.startsAt))throw new HttpError(400,'Окончание должно быть позже начала турнира.','VALIDATION');
+    endsAt=new Date(input.endsAt).toISOString();
+  }
   const fit=input.imageFit||'cover';
   if(!['cover','contain'].includes(fit))throw new HttpError(400,'Неверный формат изображения.','VALIDATION');
   const focus=input.imageFocus||{x:50,y:50};
   if(!['x','y'].every(k=>Number.isFinite(focus[k])&&focus[k]>=0&&focus[k]<=100))throw new HttpError(400,'Положение изображения — от 0 до 100.','VALIDATION');
-  return {id,title:text(input.title,140),startsAt:new Date(input.startsAt).toISOString(),
+  return {id,status,endsAt,title:text(input.title,140),startsAt:new Date(input.startsAt).toISOString(),
     description:text(input.description,2000),details:input.details.map(d=>({label:text(d.label,80),value:text(d.value,300)})),
     displayOrder:int(input.displayOrder,100000),...imageFields(input),
     imageAlt:text(input.imageAlt||'',300,true),imageFit:fit,imageFocus:{x:focus.x,y:focus.y}};

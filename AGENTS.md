@@ -17,3 +17,6 @@
 - The user means fine monochrome film grain and a slightly aged texture when asking for «виньетка». Use assets/grain.svg; avoid radial pools of light and heavy edge darkening. Keep section spacing compact so fixed chip poses do not linger too long.
 
 - Keep the grain layer below the 3D scene: texture belongs to the background; the chip and its logo must stay sharp and free of grain overlays.
+
+- Public header/footer are generated from `shared/header.html` and `shared/footer.html` by `scripts/site-components.mjs` during `npm run build`. Change the templates, not each copy independently; include regenerated public-page HTML in the commit. `shared/site.css` and `shared/site.js` own common sizing, navigation, reveal motion and home accordions.
+- ARENA hero is static/read-only. Admin has Players and Tournaments only. Keep legacy hero fields in stored documents; do not restore the hero write endpoint. The two public totals and schedule share `arena/tournaments.js` and the existing Supabase snapshot. Optional JSONB `status`/`endsAt` fields do not require changing Auth or RLS.

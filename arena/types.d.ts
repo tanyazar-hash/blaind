@@ -11,6 +11,8 @@ export interface Tournament {
   id: string;
   title: string;
   startsAt: string;
+  status?: 'scheduled' | 'active' | 'completed' | 'cancelled';
+  endsAt?: string | null;
   description: string;
   details: TournamentDetail[];
   displayOrder: number;
