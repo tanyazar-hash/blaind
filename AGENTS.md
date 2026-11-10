@@ -1,7 +1,7 @@
 # BLΛIND development and deployment
 
-- Work in the existing checkout. This is a static site; no npm install or build is required.
-- Start locally with `python3 -m http.server 8010 --directory .`.
+- Work in the existing checkout. Public pages retain their static design; ARENA administration uses Node server functions and Supabase. Run `npm ci` and `npm run build`.
+- Start locally with `npm run dev` (port 8020) for API support. Follow `ADMIN_SETUP.md` for database/secrets. Run `npm test`; never commit environment files or credentials.
 - `index.html`, `design.css`, and `experience.js` define the page and continuous scroll choreography.
 - `model.js` renders the original `shakhmatnaya-figura.glb` through locally vendored Three.js 0.170.0. Keep the GLB and third-party license intact. Never show a substitute CSS chip during loading. Show the club logo only if WebGL or model loading fails.
 - Verify desktop and mobile rendering, actual GLB load, navigation, scroll through all sections, reduced motion, and WebGL failure logo fallback. Check browser page errors.

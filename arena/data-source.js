@@ -72,4 +72,20 @@ export function createArenaDataSource({
     getTournaments:signal=>get(tournamentsUrl,validateTournaments,signal)
   };
 }
-export const arenaDataSource=createArenaDataSource();
+const staticSource=createArenaDataSource();
+let inflight,staticOnly=false;
+async function snapshot(){
+ if(inflight)return inflight;
+ inflight=(async()=>{
+  if(staticOnly)return null;
+  const response=await fetch('/api/arena',{cache:'no-store',signal:AbortSignal.timeout(12000)});
+  if(response.status===404){staticOnly=true;return null}
+  if(!response.ok)throw new Error('Arena request failed: '+response.status);
+  return response.json();
+ })().finally(()=>{inflight=null});return inflight;
+}
+export const arenaDataSource={
+ getPlayers:async()=>{const s=await snapshot();return s?validatePlayers(s.players):staticSource.getPlayers()},
+ getTournaments:async()=>{const s=await snapshot();return s?validateTournaments(s.tournaments):staticSource.getTournaments()},
+ getSnapshot:snapshot
+};

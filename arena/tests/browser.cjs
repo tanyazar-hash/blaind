@@ -6,6 +6,8 @@ const root=path.resolve(__dirname,'../..');
 const base=process.env.ARENA_BASE_URL||'http://127.0.0.1:8010';
 const players=JSON.parse(fs.readFileSync(path.join(root,'arena/data/players.json')));
 const tournaments=JSON.parse(fs.readFileSync(path.join(root,'arena/data/tournaments.json')));
+const hero=JSON.parse(fs.readFileSync(path.join(root,'arena/data/hero.json')));
+const snapshot=(p=players,t=tournaments)=>({revision:1,hero:{hero},players:p,tournaments:t});
 const output=process.env.ARENA_SCREENSHOTS||'/tmp/blaind-arena';
 fs.mkdirSync(output,{recursive:true});
 async function loaded(page){
@@ -120,7 +122,7 @@ async function loaded(page){
   imageData.tournaments[0].title='<img src=x onerror=alert(1)> клуб';
   imageData.tournaments[1].imageUrl=null;
   imageData.tournaments[2].imageUrl='./images/missing-test.webp';
-  await variants.route('**/data/tournaments.json',r=>r.fulfill({json:imageData}));
+  await variants.route('**/api/arena',r=>r.fulfill({json:snapshot(players,imageData)}));
   await variants.route('**/images/portrait-test.svg',r=>r.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="400" height="800"><rect width="400" height="800" fill="#b99a65"/><circle cx="200" cy="400" r="80" fill="#101110"/></svg>'}));
   await variants.route('**/images/missing-test.webp',r=>r.fulfill({status:404,body:''}));
   await loaded(variants);
@@ -140,7 +142,7 @@ async function loaded(page){
   console.log('PASS portrait image preserves proportions; missing/removed images fall back; titles render as text');
 
   const retry=await browser.newPage({reducedMotion:'reduce'});let attempts=0;
-  await retry.route('**/data/players.json',r=>++attempts===1?r.fulfill({status:503,body:''}):r.fulfill({json:players}));
+  await retry.route('**/api/arena',r=>r.fulfill({json:snapshot(++attempts===1?{...players,players:[{}]}:players)}));
   await retry.goto(base+'/arena');
   await retry.locator('#ranking-message[role="alert"] button').waitFor();
   assert.equal(await retry.locator('#ranking-table-wrap').isVisible(),false);
@@ -150,8 +152,7 @@ async function loaded(page){
   assert.equal(attempts,2);await retry.close();
 
   const empty=await browser.newPage({reducedMotion:'reduce'});
-  await empty.route('**/data/players.json',r=>r.fulfill({json:{...players,players:[]}}));
-  await empty.route('**/data/tournaments.json',r=>r.fulfill({json:{...tournaments,tournaments:[]}}));
+  await empty.route('**/api/arena',r=>r.fulfill({json:snapshot({...players,players:[]},{...tournaments,tournaments:[]})}));
   await empty.goto(base+'/arena');
   await empty.waitForFunction(()=>document.getElementById('players-total').textContent==='0'&&document.getElementById('tournaments-total').textContent==='0');
   assert.match(await empty.locator('#ranking-message').innerText(),/пока пуст/);

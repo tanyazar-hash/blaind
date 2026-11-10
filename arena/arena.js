@@ -132,12 +132,12 @@ function renderRanking(){
 function resetSearch(){
   state.query='';search.value='';renderRanking();search.focus({preventScroll:true});
 }
-async function loadPlayers(){
+async function loadPlayers(provided){
   setFiltersEnabled(false);$('#ranking').setAttribute('aria-busy','true');
   tableWrap.hidden=true;
   panelMessage(rankingMessage,'Загружаем рейтинг…');
   try{
-    const payload=await arenaDataSource.getPlayers();
+    const payload=provided?.players?provided:await arenaDataSource.getPlayers();
     state.ranked=rankPlayers(payload.players);state.rows.clear();
     const updated=$('#ranking-updated');
     updated.dateTime=payload.updatedAt;
@@ -230,12 +230,12 @@ function zoneName(zone,at){
     .formatToParts(new Date(at)).find(part=>part.type==='timeZoneName').value.replace('GMT','UTC');
   return names[zone]?names[zone]+' · '+offset:offset;
 }
-async function loadTournaments(){
+async function loadTournaments(provided){
   $('#tournaments').setAttribute('aria-busy','true');
   panelMessage(tournamentsMessage,'Загружаем расписание…');
   const grid=$('#tournaments-grid');grid.replaceChildren();
   try{
-    const payload=await arenaDataSource.getTournaments();
+    const payload=provided?.tournaments?provided:await arenaDataSource.getTournaments();
     const tournaments=[...payload.tournaments].sort((a,b)=>
       a.displayOrder-b.displayOrder || Date.parse(a.startsAt)-Date.parse(b.startsAt) || a.id.localeCompare(b.id));
     $('#tournaments-total').textContent=numbers.format(tournaments.length);
@@ -313,3 +313,20 @@ motion.addEventListener('change',()=>{
 reveal();
 void loadPlayers();
 void loadTournaments();
+
+let liveRevision, liveBusy=false, livePlayers, liveTournaments;
+function applyHero(h){
+ $('.arena-intro .eyebrow').textContent=h.eyebrow;
+ const title=$('#arena-title');title.replaceChildren(document.createTextNode(h.titleLine1),element('br'),element('em','',h.titleLine2));
+ $('.arena-lead').textContent=h.subtitle;$('.arena-lead').style.whiteSpace='pre-line';
+ let description=$('#hero-description');if(!description){description=element('p','arena-lead');description.id='hero-description';$('.arena-lead').after(description)}description.textContent=h.description;description.hidden=!h.description;
+ for(const [selector,label,href]of [['.arena-actions .btn',h.primaryLabel,h.primaryHref],['.arena-textlink',h.secondaryLabel,h.secondaryHref]]){const a=$(selector);a.firstChild.textContent=label+' ';a.href=href}
+ $('#leaders-title').textContent=h.leadersTitle;$('.leaders-heading').lastElementChild.textContent=h.leadersTag;$('.demo-note[data-demo="players"]').textContent=h.demoLabel;
+ $('.scroll-cue').firstChild.textContent=h.scrollCue+' ';
+ for(const [id,key]of [['players-total','playersMetricLabel'],['tournaments-total','tournamentsMetricLabel']])if(h[key])$('#'+id).nextElementSibling.textContent=h[key];
+ let background=$('#hero-background');if(!background){background=element('img');background.id='hero-background';background.alt='';Object.assign(background.style,{position:'absolute',inset:'0',width:'100%',height:'100%',objectFit:'cover',pointerEvents:'none',zIndex:'0'});$('.arena-hero').prepend(background);$('.arena-hero').style.position='relative';$('.arena-hero .arena-container').style.position='relative'}
+ const url=resolveImageUrl(h.backgroundImageUrl);background.hidden=!url;if(url)background.src=url;background.style.opacity=String(h.backgroundOpacity);
+}
+async function refreshLive(){if(document.hidden||liveBusy)return;liveBusy=true;try{const s=await arenaDataSource.getSnapshot();if(!s||s.revision===liveRevision)return;const expanded=[...document.querySelectorAll('.details-toggle[aria-expanded="true"]')].map(n=>n.closest('[data-tournament-id]').dataset.tournamentId);const playersKey=JSON.stringify(s.players),tournamentsKey=JSON.stringify(s.tournaments);await Promise.all([playersKey!==livePlayers?loadPlayers(s.players):null,tournamentsKey!==liveTournaments?loadTournaments(s.tournaments):null]);livePlayers=playersKey;liveTournaments=tournamentsKey;applyHero(s.hero.hero);for(const id of expanded){const card=[...document.querySelectorAll('[data-tournament-id]')].find(n=>n.dataset.tournamentId===id);if(card?.querySelector('.details-toggle')){card.querySelector('.details-toggle').setAttribute('aria-expanded','true');card.querySelector('.details-content').hidden=false}}liveRevision=s.revision}catch{/* Keep the last successfully rendered data during a network interruption. */}finally{liveBusy=false}}
+setInterval(refreshLive,4000);window.addEventListener('focus',refreshLive);document.addEventListener('visibilitychange',refreshLive);if('BroadcastChannel'in window)new BroadcastChannel('blaind-arena').onmessage=refreshLive;
+void refreshLive();

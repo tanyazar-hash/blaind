@@ -1,0 +1,20 @@
+{
+  "eyebrow":"БЛАИНД / ИГРА В ЦИФРАХ",
+  "titleLine1":"BLΛIND",
+  "titleLine2":"ARENA",
+  "subtitle":"Турниры. Рейтинг.\nЛучшие игроки клуба.",
+  "description":"",
+  "primaryLabel":"Рейтинг игроков",
+  "primaryHref":"#ranking",
+  "secondaryLabel":"Актуальные турниры",
+  "secondaryHref":"#tournaments",
+  "leadersTitle":"ВЕРШИНА РЕЙТИНГА",
+  "leadersTag":"TOP / 03",
+  "demoLabel":"Демонстрационные данные",
+  "playersMetricLabel":"",
+  "tournamentsMetricLabel":"",
+  "scrollCue":"ВАШЕ МЕСТО В ИГРЕ",
+  "backgroundImageUrl":null,
+  "backgroundImageStorageKey":null,
+  "backgroundOpacity":0.18
+}
