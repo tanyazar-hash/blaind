@@ -1,8 +1,3 @@
-document.querySelector('#contact-button').addEventListener('click', e => {
-  e.preventDefault();
-  alert('Контакт клуба пока не указан. После получения официального адреса или Telegram заменим эту заглушку.');
-});
-
 const position = document.querySelector('.object-position');
 const arrival = document.querySelector('.object-arrival');
 const ring = document.querySelector('.landing-ring');
