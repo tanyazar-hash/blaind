@@ -142,3 +142,38 @@ html:has(.atmosphere-page){scrollbar-gutter:stable}
  .atm-header{height:auto;min-height:100px;flex-wrap:wrap;gap:12px;padding-block:15px}
  .atm-header .mobile-nav a{font-size:8px}
 }
+
+/* Card-like edges are overlays: photo geometry and gallery hit areas stay intact. */
+.atmosphere-page .atm-frame{
+ border-radius:6px;
+ box-shadow:0 0 16px #b99a6509;
+ transition:box-shadow .65s ease;
+}
+.atmosphere-page .atm-frame::before,.atmosphere-page .atm-frame::after{
+ content:"";position:absolute;z-index:2;pointer-events:none;box-sizing:border-box;
+ transition:border-color .65s ease,opacity .65s ease;
+}
+.atmosphere-page .atm-frame::before{inset:0;border:1px solid #b99a6573;border-radius:inherit}
+.atmosphere-page .atm-frame::after{inset:7px;border:1px solid #b99a6542;border-radius:2px}
+.atmosphere-page .atm-frame:focus-visible{outline:1px solid #cfb580;outline-offset:4px;box-shadow:0 0 20px #b99a651a}
+.atmosphere-page .atm-frame:focus-visible::before{border-color:#c9ad78b3}
+.atmosphere-page .atm-frame:focus-visible::after{border-color:#b99a6573}
+.atmosphere-page .atm-photo.site-visible .atm-frame::before{animation:atm-photo-edge-in 1.1s ease-out both}
+.atmosphere-page .atm-photo.site-visible .atm-frame::after{animation:atm-photo-edge-in 1.1s .08s ease-out both}
+@keyframes atm-photo-edge-in{from{opacity:0}to{opacity:1}}
+@media(hover:hover) and (pointer:fine){
+ .atmosphere-page .atm-frame:hover{box-shadow:0 0 20px #b99a651a}
+ .atmosphere-page .atm-frame:hover::before{border-color:#c9ad78b3}
+ .atmosphere-page .atm-frame:hover::after{border-color:#b99a6573}
+}
+@media(prefers-reduced-motion:no-preference){
+ .atmosphere-page .atm-frame:focus-visible img{scale:1.025}
+}
+@media(max-width:600px){
+ .atmosphere-page .atm-frame{border-radius:5px}
+ .atmosphere-page .atm-frame::after{inset:5px}
+ .atmosphere-page .atm-frame:active::before{border-color:#c9ad78b3}
+}
+@media(prefers-reduced-motion:reduce){
+ .atmosphere-page .atm-frame,.atmosphere-page .atm-frame::before,.atmosphere-page .atm-frame::after{animation:none!important;transition:none!important}
+}
