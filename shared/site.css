@@ -97,3 +97,9 @@ html:has(.public-page){scrollbar-gutter:stable}
 @media(max-width:360px){.public-page .hero-scroll:before{display:none}.arena-actions{gap:14px}.arena-actions .btn{padding:15px 12px}}
 @media(prefers-reduced-motion:reduce){.site-header .mobile-nav a{transition:none}}
 @media(scripting:none){.public-page .site-header .site-nav{display:flex}.public-page .site-header .menu{display:none}}
+
+/* Mobile chip slots scroll with the document; desktop keeps its fixed scene. */
+@media(max-width:600px){
+ .home-page{position:relative}
+ .home-page .object-scene{position:absolute;inset:0 0 auto;overflow:hidden}
+}

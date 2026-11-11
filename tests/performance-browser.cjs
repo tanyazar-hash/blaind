@@ -26,9 +26,13 @@ const{chromium}=require('playwright');
      for(const id of['about','experience','events','contact']){
       await page.evaluate(id=>scrollTo({top:document.getElementById(id).offsetTop,behavior:'instant'}),id);
       await page.waitForFunction(id=>document.querySelector('.object-position').dataset.chapter===id,id);
-      if(['experience','events'].includes(id)||width<=600&&id==='about')assert.equal(await page.locator('.object-position').evaluate(n=>getComputedStyle(n).visibility),'hidden','parked outside '+name+' '+id);
+      if(width<=600&&id!=='contact')assert.equal(await page.locator('.object-position').evaluate(n=>getComputedStyle(n).visibility),'hidden','parked outside '+name+' '+id);
+      if(width>600){
+       const pose={about:[.77,.42,.75],experience:[.24,.37,.76],events:[.81,.43,.62]}[id];
+       if(pose){const box=await page.locator('.object-position').boundingBox();assert.ok(Math.abs(box.x+box.width/2-width*pose[0])<1,'original desktop x '+name+' '+id);assert.ok(Math.abs(box.y+box.height/2-height*pose[1])<1,'original desktop y '+name+' '+id);assert.equal(await page.locator('.object-position').evaluate(n=>getComputedStyle(n).visibility),'visible');}
+      }
       if(id==='contact'){
-       assert.match(await page.locator('.object-scene').evaluate(n=>n.style.clipPath),/inset/,'contact text clipping '+name);
+       assert.equal(await page.locator('.object-scene').evaluate(n=>n.style.clipPath),'','uncropped contact model '+name);
        const chip=await page.locator('.object-position').boundingBox(),space=await page.locator('.final-object-space').boundingBox();
        assert.ok(chip.y>=space.y-1&&chip.y+chip.height<=space.y+space.height+1,'contact reserved space '+name);
       }

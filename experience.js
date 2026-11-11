@@ -5,36 +5,50 @@ const caption = document.querySelector('.object-caption');
 const scene=document.querySelector('.object-scene');
 const sectionIds=['top','about','experience','events','contact'];
 const sections=sectionIds.map(id=>document.getElementById(id));
-const heroCopy=document.querySelector('.hero-content'),finalSpace=document.querySelector('.final-object-space');
-let mobile=false,viewportWidth=0,viewportHeight=0,modelWidth=0,copyTop=0,finalTop=0,finalBottom=0,resizeFrame=0,slowFrames=0;
+const finalSpace=document.querySelector('.final-object-space');
+let mobile=false,viewportWidth=0,viewportHeight=0,modelWidth=0,finalTop=0,finalBottom=0,heroBoundary=0,mobileSlot='hero',resizeFrame=0,slowFrames=0;
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const keys = ['x', 'y', 's', 'rx', 'ry', 'rz'];
 let chapters = [], activeChapter = -1, current = null, velocity = {};
 let model = null, lastDrawnPose = null, dropStart = null, dropElapsed = 0, impactIndex = -1;
-let frame = 0, lastTime = 0;
+let frame = 0, lastTime = 0, lastStage=null, dropAnimation=null;
 
 // Chapters select fixed viewport poses. Scroll never scrubs the model's transform.
 function layout(snap = false) {
-  mobile=innerWidth<=600;
-  const w=viewportWidth=document.documentElement.clientWidth,h=viewportHeight=innerHeight;
+  const wasMobile=mobile;mobile=innerWidth<=600;
+  if(wasMobile!==mobile)snap=true;
+  const w=viewportWidth=mobile?document.documentElement.clientWidth:innerWidth,h=viewportHeight=innerHeight;
   modelWidth=position.offsetWidth;
   const headerHeight=document.querySelector('.site-header').offsetHeight;
-  copyTop=heroCopy.getBoundingClientRect().top+scrollY;
+  heroBoundary=document.querySelector('.hero-content').getBoundingClientRect().top+scrollY-16;
   const rect=finalSpace.getBoundingClientRect();finalTop=rect.top+scrollY;finalBottom=rect.bottom+scrollY;
-  const bottom=Math.max(0,document.documentElement.scrollHeight-h);
+  const footer=document.querySelector('.site-footer');
+  const documentHeight=Math.max(h,footer.getBoundingClientRect().bottom+scrollY);
+  const bottom=Math.max(0,documentHeight-h);
   const finalScroll=Math.min(sections[4].offsetTop,bottom);
-  const hidden={x:w+modelWidth,y:mobile?-modelWidth:h*.35,s:.6,rx:30,ry:-214,rz:-14};
-  const poses=[
-    {x:w*(mobile?.5:.79),y:mobile?headerHeight+112:h*.47,s:mobile?.9:.88,rx:18,ry:-24,rz:-16},
-    mobile?hidden:{x:w*.77,y:h*.42,s:.75,rx:30,ry:-154,rz:10},
-    hidden,hidden,
-    {x:w*.5,y:(finalTop+finalBottom)/2-finalScroll,s:mobile?.72:.47,rx:0,ry:-360,rz:0}
+  // Desktop preserves the original five chapter poses and entry thresholds.
+  const desktopPoses=[
+    {x:w*.79,y:h*.47,s:.88,rx:18,ry:-24,rz:-16},
+    {x:w*.77,y:h*.42,s:.75,rx:30,ry:-154,rz:10},
+    {x:w*.24,y:h*.37,s:.76,rx:22,ry:-214,rz:-14},
+    {x:w*.81,y:h*.43,s:.62,rx:-12,ry:-330,rz:10},
+    {x:w*.5,y:(finalTop+finalBottom)/2-finalScroll,s:.47,rx:0,ry:-360,rz:0}
+  ];
+  // Mobile slots live in document space: scrolling never drags the chip over copy.
+  const away={x:w+modelWidth,y:headerHeight+112,s:.72,rx:30,ry:-154,rz:10};
+  const mobilePoses=[
+    {x:w*.5,y:headerHeight+112,s:.9,rx:18,ry:-24,rz:-16},
+    away,away,away,
+    {x:w*.5,y:(finalTop+finalBottom)/2,s:.72,rx:0,ry:-360,rz:0}
   ];
   chapters=sections.map((section,i)=>({
-    enter:i===0?0:mobile&&i===1?24:Math.max(0,Math.min(section.offsetTop-h*(i===4?.15:.45),bottom-32)),
-    pose:poses[i]
+    enter:i===0?0:mobile&&i===1?24:Math.max(0,Math.min((mobile&&i===4?finalTop:section.offsetTop)-h*(mobile&&i===4?.7:.45),bottom-32)),
+    pose:(mobile?mobilePoses:desktopPoses)[i]
   }));
-  if(snap){current=null;activeChapter=-1}
+  if(mobile&&current&&(lastStage==='hero'||lastStage==='contact')){current.y=mobilePoses[lastStage==='hero'?0:4].y;velocity.y=0}
+  if(!mobile){scene.style.top='';scene.style.height=''}
+  scene.style.clipPath='';
+  if(snap){current=null;activeChapter=-1;lastStage=null}
   model?.resize();requestFrame();
 }
 function scheduleLayout(){if(!resizeFrame)resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;layout()})}
@@ -78,11 +92,29 @@ function advance(target, dt) {
 function render(time) {
   frame = 0;
   const elapsed=(time-(lastTime||time-16))/1000;
-  const dt=Math.max(.001,Math.min(.12,elapsed));
+  const dt=Math.max(.001,Math.min(.25,elapsed));
   if(model&&position.style.visibility!=='hidden'&&elapsed>.05&&elapsed<1){if(++slowFrames===12){model.reduceQuality();slowFrames=0}}else slowFrames=0;
   lastTime = time;
   const target = {...selectChapter()};
-  if(activeChapter!==0&&dropStart!==null){dropStart=null;arrival.dataset.state='ready'}
+  const stage=mobile?(activeChapter===0?'hero':activeChapter===4?'contact':'away'):'desktop';
+  if(mobile&&current&&lastStage&&stage!==lastStage){
+    if(stage==='away'){
+      dropAnimation?.cancel();dropAnimation=null;dropStart=null;arrival.dataset.state='ready';
+    }else{
+      current={...target,x:stage==='hero'?target.x:viewportWidth+modelWidth};
+      velocity=Object.fromEntries(keys.map(key=>[key,0]));lastDrawnPose=null;
+      if(stage==='hero'&&model)startDrop();
+    }
+  }
+  if(mobile&&stage==='away'&&current)target.y=current.y;
+  lastStage=stage;
+  if(mobile&&stage!=='away')mobileSlot=stage;
+  const sceneTop=mobile&&mobileSlot==='contact'?finalTop:0;
+  if(mobile){
+    const top=sceneTop+'px',height=(mobileSlot==='contact'?finalBottom-finalTop:heroBoundary)+'px';
+    if(scene.style.top!==top)scene.style.top=top;
+    if(scene.style.height!==height)scene.style.height=height;
+  }
   // Jumping several chapters uses the shortest turn, including on the way back.
   if (current && !motion.matches) {
     for (const key of ['rx', 'ry', 'rz']) {
@@ -95,7 +127,7 @@ function render(time) {
     velocity = Object.fromEntries(keys.map(key => [key, 0]));
   }
   const moving = !motion.matches && advance(target, dt);
-  position.style.transform = 'translate3d(' + current.x.toFixed(3) + 'px,' + current.y.toFixed(3) + 'px,0) translate(-50%,-50%) scale(' + current.s.toFixed(5) + ')';
+  position.style.transform = 'translate3d(' + current.x.toFixed(3) + 'px,' + (current.y-sceneTop).toFixed(3) + 'px,0) translate(-50%,-50%) scale(' + current.s.toFixed(5) + ')';
   const pose = motion.matches ? {rx:12, ry:-15, rz:-8} : {rx:current.rx, ry:current.ry, rz:current.rz};
   let lift = 0;
   if (dropStart !== null) {
@@ -152,25 +184,20 @@ function render(time) {
       ],{duration:320-impact*40,easing:'ease-out'});
     }
   }
-  arrival.style.transform = 'translate3d(0,' + lift.toFixed(3) + 'px,0)';
+  if(!dropAnimation)arrival.style.transform='translate3d(0,'+lift.toFixed(3)+'px,0)';
   // Translation is handled by the compositor. An unchanged pose needs no WebGL redraw.
   const radius=modelWidth*current.s/2;
-  const visible=current.x+radius>0&&current.x-radius<viewportWidth&&current.y+radius>0&&current.y-radius<viewportHeight;
+  const viewportY=current.y-(mobile?scrollY:0);
+  const visible=current.x+radius>0&&current.x-radius<viewportWidth&&viewportY+radius>0&&viewportY-radius<viewportHeight;
   position.dataset.chapter=sectionIds[activeChapter];
   position.style.visibility=visible?'visible':'hidden';
-  if(mobile||activeChapter===4){
-    const top=activeChapter===4?Math.max(0,finalTop-scrollY):0;
-    const end=activeChapter===4?finalBottom-scrollY:copyTop-scrollY-16;
-    const bottom=Math.max(0,viewportHeight-Math.max(top,Math.min(viewportHeight,end)));
-    scene.style.clipPath=`inset(${top}px 0 ${bottom}px 0)`;
-  }else scene.style.clipPath='';
   if(!visible)lastDrawnPose=null;
   if (model && visible && (!lastDrawnPose || ['rx','ry','rz'].some(key => Math.abs(pose[key] - lastDrawnPose[key]) > .001))) {
     model.draw(pose);
     lastDrawnPose = {...pose};
   }
   caption.style.opacity = model && dropStart === null && activeChapter === 0 ? String(Math.max(0,1-scrollY/300)) : '0';
-  if (moving || dropStart !== null) requestFrame();
+  if (moving || dropStart !== null) requestFrame();else lastTime=0;
 }
 
 document.addEventListener('site:layout',scheduleLayout);
@@ -182,6 +209,7 @@ document.addEventListener('visibilitychange',()=>{lastTime=0;if(document.hidden)
 motion.addEventListener('change', () => {
   if (motion.matches) {
     dropStart = null;
+    dropAnimation?.cancel();dropAnimation=null;arrival.style.transform='';
     ring.getAnimations().forEach(animation => animation.cancel());
     if (model) arrival.dataset.state = 'ready';
   }
@@ -193,6 +221,7 @@ document.fonts.ready.then(() => layout());
 function showFallback() {
   model = null;
   dropStart = null;
+  dropAnimation?.cancel();dropAnimation=null;
   arrival.classList.remove('model-loaded');
   arrival.classList.add('fallback-visible');
   arrival.dataset.state = 'fallback';
@@ -200,14 +229,30 @@ function showFallback() {
 }
 
 function startDrop(){
-  if(!motion.matches&&scrollY<24){dropStart=performance.now();dropElapsed=0;impactIndex=-1;lastTime=dropStart;arrival.dataset.state='falling'}
-  else {dropStart=null;arrival.dataset.state='ready'}
+  dropAnimation?.cancel();dropAnimation=null;
+  if(!motion.matches&&scrollY<24){
+    dropStart=performance.now();dropElapsed=0;impactIndex=-1;lastTime=dropStart;arrival.dataset.state='falling';
+    const height=chapters[0].pose.y+modelWidth*.75+40;
+    const duration=1530,keyframes=[];
+    for(let ms=0;ms<=duration;ms+=15){
+      const t=ms/1000;let lift=0;
+      if(t<.6)lift=-height*(1-(t/.6)**2);
+      else{let remaining=t-.6;for(const bounce of[{duration:.36,height:56},{duration:.25,height:25},{duration:.17,height:9}]){if(remaining<bounce.duration){const q=remaining/bounce.duration;lift=-4*bounce.height*q*(1-q);break}remaining-=bounce.duration}}
+      keyframes.push({offset:ms/duration,transform:`translate3d(0,${lift}px,0)`});
+    }
+    // Compositor translation stays smooth independently of GPU rotation updates.
+    const animation=arrival.animate(keyframes,{duration,easing:'linear',fill:'both'});dropAnimation=animation;
+    animation.ready.then(()=>{if(dropAnimation===animation){dropStart=animation.startTime??performance.now();lastTime=dropStart;requestFrame()}}).catch(()=>{});
+    animation.finished.then(()=>{if(dropAnimation===animation){arrival.style.transform='translate3d(0,0,0)';animation.cancel();dropAnimation=null}}).catch(()=>{});
+  }else {dropStart=null;arrival.dataset.state='ready';arrival.style.transform='translate3d(0,0,0)'}
   requestFrame();
 }
 // Let text paint before creating a GPU context; fetch only the selected original-model LOD.
 requestAnimationFrame(()=>requestAnimationFrame(()=>{
  import('./model.js').then(async({createChip})=>{
   model=await createChip(arrival,showFallback);lastDrawnPose=null;
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  if(!model)return;
   layout();startDrop();
   if(frame)cancelAnimationFrame(frame);
   render(performance.now());arrival.classList.add('model-loaded');
