@@ -38,7 +38,6 @@
           <aside class="arena-stats" aria-label="Арена в цифрах">
             <a class="arena-stat" href="#ranking"><span class="arena-stat-number" id="players-total" aria-live="polite">—</span><span class="arena-stat-label">игроков в рейтинге</span></a>
             <a class="arena-stat" href="#tournaments"><span class="arena-stat-number" id="tournaments-total" aria-live="polite">—</span><span class="arena-stat-label">актуальных турниров</span></a>
-            <p class="demo-note" data-demo="players">Демонстрационные данные</p>
           </aside>
         </div>
         <div class="arena-hero-bottom">
@@ -50,7 +49,7 @@
       <div class="arena-container">
         <div class="arena-section-heading arena-reveal">
           <div><p class="section-num">01 — РЕЙТИНГ</p><h2 id="ranking-title">Игроки <em>арены.</em></h2></div>
-          <div class="section-meta"><span class="demo-note" data-demo="players">Демонстрационный рейтинг</span><p>Обновлено <time id="ranking-updated">—</time></p></div>
+          <div class="section-meta"><p>Обновлено <time id="ranking-updated">—</time></p></div>
         </div>
         <form id="ranking-filters" class="ranking-toolbar arena-reveal" role="search" aria-label="Поиск и сортировка игроков">
           <div class="search-field"><label for="player-search" class="visually-hidden">Поиск по никнейму</label><span class="search-icon" aria-hidden="true"></span><input id="player-search" type="search" placeholder="Поиск по никнейму" maxlength="100" autocomplete="off" spellcheck="false" aria-describedby="ranking-summary"><button id="clear-search" type="button" class="clear-search" aria-label="Очистить поиск" hidden><span aria-hidden="true"></span></button></div>
@@ -60,7 +59,7 @@
         <div id="ranking-message" class="panel-message" role="status"><p>Загружаем рейтинг…</p><div class="loading-line" aria-hidden="true"></div></div>
         <div id="ranking-table-wrap" hidden>
           <table class="ranking-table">
-            <caption class="visually-hidden">Рейтинг игроков Блаинд. Демонстрационные данные. Место определяется по очкам.</caption>
+            <caption class="visually-hidden">Рейтинг игроков Блаинд. Место определяется по очкам.</caption>
             <thead><tr><th scope="col">Место</th><th scope="col">Игрок</th><th scope="col" data-sort="tournamentsPlayed"><button type="button" data-column-sort="tournamentsPlayed">Турниры <span class="column-arrow" aria-hidden="true"></span></button></th><th scope="col" data-sort="wins"><button type="button" data-column-sort="wins">Победы <span class="column-arrow" aria-hidden="true"></span></button></th><th scope="col" data-sort="points" aria-sort="descending"><button type="button" data-column-sort="points">Очки <span class="column-arrow" aria-hidden="true"></span></button></th></tr></thead>
             <tbody id="ranking-body"></tbody>
           </table>
@@ -72,7 +71,7 @@
       <div class="arena-container">
         <div class="arena-section-heading arena-reveal">
           <div><p class="section-num">02 — СЛЕДУЮЩИЙ ХОД</p><h2 id="tournaments-title">Актуальные<br><em>турниры.</em></h2></div>
-          <div class="section-meta"><span class="demo-note" data-demo="tournaments">Демонстрационное расписание</span><p id="tournament-timezone">Барнаул · UTC+7</p></div>
+          <div class="section-meta"><p id="tournament-timezone">Барнаул · UTC+7</p></div>
         </div>
         <div id="tournaments-message" class="panel-message" role="status"><p>Загружаем расписание…</p><div class="loading-line" aria-hidden="true"></div></div>
         <div id="tournaments-grid" class="tournaments-grid"></div>

@@ -30,9 +30,6 @@ function word(count,forms){return forms[{one:0,few:1,other:2}[plural.select(coun
 function formatDate(value,options={},zone=defaultZone){
   return new Intl.DateTimeFormat('ru-RU',{timeZone:zone,...options}).format(new Date(value));
 }
-function setDemo(kind,isDemo){
-  document.querySelectorAll('[data-demo="'+kind+'"]').forEach(node=>{node.hidden=isDemo===false});
-}
 function panelMessage(container,text,action,label='Повторить',alert=false){
   container.replaceChildren(element('p','',text));
   container.setAttribute('role',alert?'alert':'status');
@@ -120,7 +117,6 @@ async function loadPlayers(provided){
     const updated=$('#ranking-updated');
     updated.dateTime=payload.updatedAt;
     updated.textContent=formatDate(payload.updatedAt,{day:'numeric',month:'long',year:'numeric'});
-    setDemo('players',payload.isDemo);
     showPlayerTotal();setFiltersEnabled(true);renderRanking();
   }catch(error){
     console.warn('Arena rating unavailable:',error);
@@ -219,7 +215,6 @@ async function loadTournaments(provided){
     $('#tournaments-total').textContent=numbers.format(tournaments.length);
     $('#tournaments-total').nextElementSibling.textContent=word(tournaments.length,['турнир','турнира','турниров'])+' сейчас в арене';
     $('#tournament-timezone').textContent=zoneName(payload.timeZone,payload.updatedAt);
-    setDemo('tournaments',payload.isDemo);
     if(!tournaments.length){panelMessage(tournamentsMessage,'Новые турниры скоро появятся.');return}
     grid.replaceChildren(...tournaments.map(tournament=>tournamentCard(tournament,payload.timeZone)));
     tournamentsMessage.hidden=true;reveal();
