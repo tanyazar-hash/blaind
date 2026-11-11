@@ -1,6 +1,6 @@
-@font-face{font-family:Manrope;src:url('/arena/fonts/manrope.woff') format('woff');font-weight:200 800;font-display:swap}
-@font-face{font-family:'Playfair Display';src:url('/arena/fonts/playfair.woff') format('woff');font-weight:400 900;font-display:swap}
-@font-face{font-family:'Playfair Display';src:url('/arena/fonts/playfair-italic.woff') format('woff');font-weight:400 900;font-style:italic;font-display:swap}
+@font-face{font-family:Manrope;src:url('/arena/fonts/manrope.woff2') format('woff2');font-weight:200 800;font-display:swap}
+@font-face{font-family:'Playfair Display';src:url('/arena/fonts/playfair.woff2') format('woff2');font-weight:400 900;font-display:swap}
+@font-face{font-family:'Playfair Display';src:url('/arena/fonts/playfair-italic.woff2') format('woff2');font-weight:400 900;font-style:italic;font-display:swap}
 .public-page{--site-header-height:112px;--site-edge:8%;--site-hero-height:max(660px,calc(100svh - var(--site-header-height)));--site-hero-top:64px;--site-hero-bottom:100px}
 html:has(.public-page){scrollbar-gutter:stable}
 .public-page .site-header{height:var(--site-header-height);position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 var(--site-edge);background:var(--bg);border-bottom:1px solid var(--line)}
@@ -60,3 +60,40 @@ html:has(.public-page){scrollbar-gutter:stable}
 .site-footer .site-credit{margin:18px 0 0;text-align:center;font-size:8px;line-height:1.8;letter-spacing:.12em;color:var(--muted)}
 .site-footer .site-credit a{color:var(--gold);transition:color .25s}
 .site-footer .site-credit a:hover{color:var(--paper)}
+
+/* Fluid layouts keep the original typography and palette without empty mobile stages. */
+.public-page main,.hero-content,.arena-intro,.arena-stats,.atm-hero-copy{min-width:0}
+.public-page h1,.public-page h2{overflow-wrap:break-word}
+.site-header a,.site-footer a,.public-page button{touch-action:manipulation}
+.site-header .menu{min-height:44px;min-width:64px}
+.site-header{padding-top:env(safe-area-inset-top)}
+@media(max-width:900px) and (min-width:601px){
+ .arena-page .hero-layout{grid-template-columns:1fr;gap:30px}
+ .arena-stats{grid-template-columns:1fr 1fr;gap:24px;margin:0;padding-top:20px}
+ .arena-stat{display:block;padding-bottom:18px}.arena-stat-number{display:block;font-size:58px}.arena-stat-label{display:block;margin-top:10px}
+ .public-page .arena-hero{padding-top:45px;padding-bottom:80px}
+ .home-page .hero h1{font-size:clamp(58px,7.8vw,78px)}
+}
+@media(max-width:760px){
+ .site-header .site-nav{display:none}.site-header .menu{display:block}
+ .site-header .mobile-nav{position:absolute;top:100%;left:0;right:0;background:var(--bg);padding:22px var(--site-edge);border-bottom:1px solid var(--line);flex-direction:column;align-items:flex-start;gap:12px}
+ .site-header .mobile-nav.open{display:flex}.site-header .mobile-nav a{min-height:44px;display:flex;align-items:center}
+}
+@media(max-width:600px){
+ .public-page{--site-hero-height:max(790px,calc(100svh - var(--site-header-height)))}
+ .public-page .hero{padding-top:255px;padding-bottom:100px}
+ .home-page .hero-content{width:100%}.home-page .actions{gap:12px 22px}
+ .public-page .about{min-height:0;gap:0}.home-page .object-space{display:none}
+ .home-page .experience{min-height:0}.home-page .features{margin-top:45px}
+ .home-page #events{min-height:0;padding-top:64px}
+ .home-page .section-title{font-size:clamp(36px,10vw,50px)}
+ .home-page .object-position{width:clamp(205px,52vw,230px)}
+ .home-page .object-caption{display:none}
+ .public-page .event summary{min-height:76px}.event summary h3{font-size:clamp(18px,5.3vw,23px)}
+ .public-page .hero-index,.public-page .hero-scroll{letter-spacing:.08em}
+ .public-page .hero-scroll{gap:8px}.public-page .hero-scroll:before{width:16px}
+ .public-page .site-footer{padding-bottom:max(20px,env(safe-area-inset-bottom))}
+}
+@media(max-width:360px){.public-page .hero-scroll:before{display:none}.arena-actions{gap:14px}.arena-actions .btn{padding:15px 12px}}
+@media(prefers-reduced-motion:reduce){.site-header .mobile-nav a{transition:none}}
+@media(scripting:none){.public-page .site-header .site-nav{display:flex}.public-page .site-header .menu{display:none}}

@@ -15,9 +15,8 @@ const {chromium}=require('playwright');
    page.on('response',r=>{if(r.url().startsWith(base)&&r.status()>=400)failed.push(r.url())});
    // Exercise static production files; original GLB renderers have their own regression suite.
    await page.route('**/model.js',r=>r.abort());
-   await page.route('**/aces.js',r=>r.fulfill({contentType:'text/javascript',body:''}));
    await page.route('**/api/arena',r=>r.fulfill({json:publicSnapshot({version:1,document:defaultDocument()})}));
-   for(const path of['/','/arena/','/atmosphere/','/aces.html','/legal/','/legal/privacy.html','/legal/rules.html','/legal/terms.html','/legal/consents.html','/legal/sources.html']){
+   for(const path of['/','/arena/','/atmosphere/','/legal/','/legal/privacy.html','/legal/rules.html','/legal/terms.html','/legal/consents.html','/legal/sources.html']){
     const response=await page.goto(base+path);assert.equal(response.status(),200,path);
     const nav=page.getByRole('navigation',{name:'Правовые документы',exact:true});
     assert.equal(await nav.locator('a').count(),6);

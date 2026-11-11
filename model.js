@@ -1,11 +1,16 @@
 import * as THREE from './vendor/three/three.module.js';
 import { GLTFLoader } from './vendor/three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from './vendor/three/addons/environments/RoomEnvironment.js';
+import {MeshoptDecoder} from './vendor/meshoptimizer/meshopt_decoder.module.js';
+import models from './assets/models/manifest.js';
 
-// The uploaded GLB is retained intact. One scene and one model serve the whole page.
+// Derived LODs preserve the original chip; the uploaded source is retained in Git.
 export async function createChip(container, onContextLost) {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, innerWidth <= 600 ? 1.5 : 2));
+  const constrained=navigator.connection?.saveData||navigator.deviceMemory<=4||navigator.hardwareConcurrency<=4;
+  const mobile=innerWidth<=900||constrained;
+  let pixelRatio=Math.min(devicePixelRatio,mobile?(constrained?1:1.25):1.75);
+  renderer.setPixelRatio(pixelRatio);
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -17,7 +22,10 @@ export async function createChip(container, onContextLost) {
   camera.position.set(0, 0, 7);
   const pmrem = new THREE.PMREMGenerator(renderer);
   const room = new RoomEnvironment();
-  const environment = pmrem.fromScene(room, .04);
+  const cube=new THREE.WebGLCubeRenderTarget(mobile?64:128,{type:THREE.HalfFloatType});
+  new THREE.CubeCamera(.1,100,cube).update(renderer,room);
+  const environment = pmrem.fromCubemap(cube.texture);
+  cube.dispose();
   scene.environment = environment.texture;
   scene.environmentIntensity = .65;
   room.dispose();
@@ -31,7 +39,7 @@ export async function createChip(container, onContextLost) {
   fill.position.set(2, -3, 4); scene.add(fill);
   let root;
   try {
-    root = (await new GLTFLoader().loadAsync('./shakhmatnaya-figura.glb')).scene;
+    root = (await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(mobile?models.mobile:models.desktop)).scene;
   } catch (error) {
     environment.dispose(); renderer.dispose();
     throw error;
@@ -48,7 +56,7 @@ export async function createChip(container, onContextLost) {
   // The same reference-based Cyrillic logo is used in the header and on the GLB.
   const texture = await new THREE.TextureLoader().loadAsync('./assets/club-logo.svg');
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  texture.anisotropy = Math.min(4,renderer.capabilities.getMaxAnisotropy());
   const material = new THREE.MeshStandardMaterial({
     map: texture, transparent: true, alphaTest: .05, roughness: .65, metalness: .25,
     depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1
@@ -61,8 +69,10 @@ export async function createChip(container, onContextLost) {
   reverseLogo.position.z = -thickness / 2 - .012;
   reverseLogo.rotation.y = Math.PI;
   pivot.add(reverseLogo);
+  let width=0,height=0,disposed=false;
   let lastPose = { rx:20, ry:-28, rz:-21 };
   function draw(pose = lastPose) {
+    if(disposed)return;
     lastPose = pose;
     pivot.rotation.set(
       THREE.MathUtils.degToRad(-pose.rx),
@@ -70,9 +80,12 @@ export async function createChip(container, onContextLost) {
       THREE.MathUtils.degToRad(pose.rz)
     );
     renderer.render(scene, camera);
+    canvas.dataset.triangles=String(renderer.info.render.triangles);
   }
   function resize() {
-    const width = container.offsetWidth, height = container.offsetHeight;
+    const nextWidth=container.offsetWidth,nextHeight=container.offsetHeight;
+    if(nextWidth===width&&nextHeight===height)return;
+    width=nextWidth;height=nextHeight;
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
@@ -85,5 +98,15 @@ export async function createChip(container, onContextLost) {
   });
   container.append(canvas);
   resize();
-  return { draw, resize };
+  function reduceQuality(){
+    if(pixelRatio<=.9)return;
+    pixelRatio=Math.max(.9,pixelRatio*.8);renderer.setPixelRatio(pixelRatio);draw();
+  }
+  function dispose(){
+    if(disposed)return;disposed=true;
+    scene.traverse(node=>{node.geometry?.dispose();if(node.material)for(const mat of Array.isArray(node.material)?node.material:[node.material]){for(const value of Object.values(mat))if(value?.isTexture)value.dispose();mat.dispose()}});
+    environment.dispose();renderer.dispose();canvas.remove();
+  }
+  canvas.dataset.lod=mobile?'mobile':'desktop';
+  return { draw, resize, reduceQuality, dispose };
 }

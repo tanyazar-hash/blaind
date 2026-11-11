@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 import {syncSiteComponents} from '../scripts/site-components.mjs';
 const root=resolve(import.meta.dirname,'..');
 const documents=['index','privacy','rules','terms','consents','sources'];
-const pages=['index.html','arena/index.html','atmosphere/index.html','aces.html',...documents.map(name=>'legal/'+name+'.html')];
+const pages=['index.html','arena/index.html','atmosphere/index.html',...documents.map(name=>'legal/'+name+'.html')];
 test('legal documents and footer links are present in every public page and production output',async()=>{
  const links=await readFile(resolve(root,'shared/legal-links.html'),'utf8');
  for(const page of pages){

@@ -2,6 +2,11 @@ const position = document.querySelector('.object-position');
 const arrival = document.querySelector('.object-arrival');
 const ring = document.querySelector('.landing-ring');
 const caption = document.querySelector('.object-caption');
+const scene=document.querySelector('.object-scene');
+const sectionIds=['top','about','experience','events','contact'];
+const sections=sectionIds.map(id=>document.getElementById(id));
+const heroCopy=document.querySelector('.hero-content'),finalSpace=document.querySelector('.final-object-space');
+let mobile=false,viewportWidth=0,viewportHeight=0,modelWidth=0,copyTop=0,finalTop=0,finalBottom=0,resizeFrame=0,slowFrames=0;
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const keys = ['x', 'y', 's', 'rx', 'ry', 'rz'];
 let chapters = [], activeChapter = -1, current = null, velocity = {};
@@ -10,28 +15,29 @@ let frame = 0, lastTime = 0;
 
 // Chapters select fixed viewport poses. Scroll never scrubs the model's transform.
 function layout(snap = false) {
-  const mobile = innerWidth <= 600, w = innerWidth, h = innerHeight;
-  const ids = ['top', 'about', 'experience', 'events', 'contact'];
-  const sections = ids.map(id => document.getElementById(id));
-  const space = document.querySelector('.final-object-space');
-  const bottom = Math.max(0, document.documentElement.scrollHeight - h);
-  const finalScroll = Math.min(sections[4].offsetTop, bottom);
-  const finalY = space.getBoundingClientRect().top + scrollY + space.offsetHeight / 2 - finalScroll;
-  const poses = [
-    {x:w*(mobile ? .73 : .79), y:mobile ? 170 : h*.47, s:mobile ? .72 : .88, rx:18, ry:-24, rz:-16},
-    {x:w*(mobile ? .78 : .77), y:mobile ? h*.84 : h*.42, s:mobile ? .55 : .75, rx:30, ry:-154, rz:10},
-    {x:w*(mobile ? .78 : .24), y:mobile ? h*.78 : h*.37, s:mobile ? .52 : .76, rx:22, ry:-214, rz:-14},
-    {x:w*(mobile ? .72 : .81), y:mobile ? 175 : h*.43, s:mobile ? .5 : .62, rx:-12, ry:-330, rz:10},
-    {x:w*.5, y:finalY, s:mobile ? .60 : .47, rx:0, ry:-360, rz:0}
+  mobile=innerWidth<=600;
+  const w=viewportWidth=document.documentElement.clientWidth,h=viewportHeight=innerHeight;
+  modelWidth=position.offsetWidth;
+  const headerHeight=document.querySelector('.site-header').offsetHeight;
+  copyTop=heroCopy.getBoundingClientRect().top+scrollY;
+  const rect=finalSpace.getBoundingClientRect();finalTop=rect.top+scrollY;finalBottom=rect.bottom+scrollY;
+  const bottom=Math.max(0,document.documentElement.scrollHeight-h);
+  const finalScroll=Math.min(sections[4].offsetTop,bottom);
+  const hidden={x:w+modelWidth,y:mobile?-modelWidth:h*.35,s:.6,rx:30,ry:-214,rz:-14};
+  const poses=[
+    {x:w*(mobile?.5:.79),y:mobile?headerHeight+112:h*.47,s:mobile?.9:.88,rx:18,ry:-24,rz:-16},
+    mobile?hidden:{x:w*.77,y:h*.42,s:.75,rx:30,ry:-154,rz:10},
+    hidden,hidden,
+    {x:w*.5,y:(finalTop+finalBottom)/2-finalScroll,s:mobile?.72:.47,rx:0,ry:-360,rz:0}
   ];
-  chapters = sections.map((section, i) => ({
-    enter:i === 0 ? 0 : Math.max(0, Math.min(section.offsetTop - h*.45, bottom - 32)),
+  chapters=sections.map((section,i)=>({
+    enter:i===0?0:mobile&&i===1?24:Math.max(0,Math.min(section.offsetTop-h*(i===4?.15:.45),bottom-32)),
     pose:poses[i]
   }));
-  if (snap) { current = null; activeChapter = -1; }
-  model?.resize();
-  requestFrame();
+  if(snap){current=null;activeChapter=-1}
+  model?.resize();requestFrame();
 }
+function scheduleLayout(){if(!resizeFrame)resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;layout()})}
 
 function selectChapter() {
   if (activeChapter === -1) {
@@ -39,14 +45,14 @@ function selectChapter() {
     while (activeChapter < chapters.length - 1 && scrollY >= chapters[activeChapter + 1].enter) activeChapter++;
   } else {
     // A small dead band prevents repeated transitions around a section boundary.
-    while (activeChapter < chapters.length - 1 && scrollY >= chapters[activeChapter + 1].enter + 20) activeChapter++;
-    while (activeChapter > 0 && scrollY < chapters[activeChapter].enter - 48) activeChapter--;
+    while (activeChapter < chapters.length - 1 && scrollY >= chapters[activeChapter + 1].enter + (mobile&&activeChapter===0?0:20)) activeChapter++;
+    while (activeChapter > 0 && scrollY < chapters[activeChapter].enter - Math.min(48,chapters[activeChapter].enter/2)) activeChapter--;
   }
   return chapters[activeChapter].pose;
 }
 
 function requestFrame() {
-  if (!frame) frame = requestAnimationFrame(render);
+  if (!frame&&!document.hidden) frame = requestAnimationFrame(render);
 }
 
 // An analytic critically damped spring preserves velocity when a user reverses
@@ -71,9 +77,12 @@ function advance(target, dt) {
 
 function render(time) {
   frame = 0;
-  const dt = Math.max(.001, Math.min(.064, (time - (lastTime || time - 16)) / 1000));
+  const elapsed=(time-(lastTime||time-16))/1000;
+  const dt=Math.max(.001,Math.min(.12,elapsed));
+  if(model&&position.style.visibility!=='hidden'&&elapsed>.05&&elapsed<1){if(++slowFrames===12){model.reduceQuality();slowFrames=0}}else slowFrames=0;
   lastTime = time;
   const target = {...selectChapter()};
+  if(activeChapter!==0&&dropStart!==null){dropStart=null;arrival.dataset.state='ready'}
   // Jumping several chapters uses the shortest turn, including on the way back.
   if (current && !motion.matches) {
     for (const key of ['rx', 'ry', 'rz']) {
@@ -90,11 +99,11 @@ function render(time) {
   const pose = motion.matches ? {rx:12, ry:-15, rz:-8} : {rx:current.rx, ry:current.ry, rz:current.rz};
   let lift = 0;
   if (dropStart !== null) {
-    dropElapsed += dt;
+    dropElapsed = Math.max(0,(time-dropStart)/1000);
     let impact = -1;
     if (dropElapsed < .60) {
       const q = dropElapsed / .60;
-      const height = chapters[0].pose.y + position.offsetWidth * .75 + 40;
+      const height = chapters[0].pose.y + modelWidth * .75 + 40;
       lift = -height * (1 - q*q);
       pose.rx += 360 * q + 28 * (1 - q);
       pose.ry += 36 * (1 - q);
@@ -145,7 +154,18 @@ function render(time) {
   }
   arrival.style.transform = 'translate3d(0,' + lift.toFixed(3) + 'px,0)';
   // Translation is handled by the compositor. An unchanged pose needs no WebGL redraw.
-  if (model && (!lastDrawnPose || ['rx','ry','rz'].some(key => Math.abs(pose[key] - lastDrawnPose[key]) > .001))) {
+  const radius=modelWidth*current.s/2;
+  const visible=current.x+radius>0&&current.x-radius<viewportWidth&&current.y+radius>0&&current.y-radius<viewportHeight;
+  position.dataset.chapter=sectionIds[activeChapter];
+  position.style.visibility=visible?'visible':'hidden';
+  if(mobile||activeChapter===4){
+    const top=activeChapter===4?Math.max(0,finalTop-scrollY):0;
+    const end=activeChapter===4?finalBottom-scrollY:copyTop-scrollY-16;
+    const bottom=Math.max(0,viewportHeight-Math.max(top,Math.min(viewportHeight,end)));
+    scene.style.clipPath=`inset(${top}px 0 ${bottom}px 0)`;
+  }else scene.style.clipPath='';
+  if(!visible)lastDrawnPose=null;
+  if (model && visible && (!lastDrawnPose || ['rx','ry','rz'].some(key => Math.abs(pose[key] - lastDrawnPose[key]) > .001))) {
     model.draw(pose);
     lastDrawnPose = {...pose};
   }
@@ -153,11 +173,12 @@ function render(time) {
   if (moving || dropStart !== null) requestFrame();
 }
 
-document.addEventListener('site:layout',()=>layout());
+document.addEventListener('site:layout',scheduleLayout);
 window.addEventListener('scroll', requestFrame, {passive:true});
-window.addEventListener('resize', () => { layout(); });
-window.addEventListener('pageshow', event => layout(event.persisted));
-document.addEventListener('visibilitychange', () => { lastTime = 0; if (!document.hidden) requestFrame(); });
+window.addEventListener('resize',scheduleLayout,{passive:true});
+window.addEventListener('pageshow',event=>{layout(event.persisted);if(event.persisted&&model&&scrollY<24)startDrop()});
+window.addEventListener('pagehide',event=>{if(frame)cancelAnimationFrame(frame);frame=0;if(!event.persisted)model?.dispose()});
+document.addEventListener('visibilitychange',()=>{lastTime=0;if(document.hidden){if(frame)cancelAnimationFrame(frame);frame=0}else requestFrame()});
 motion.addEventListener('change', () => {
   if (motion.matches) {
     dropStart = null;
@@ -178,23 +199,17 @@ function showFallback() {
   requestFrame();
 }
 
-// Only the original GLB appears during a successful load.
-import('./model.js').then(async ({createChip}) => {
-  model = await createChip(arrival, showFallback);
-  lastDrawnPose = null;
-  if (!motion.matches && scrollY < 40) {
-    dropStart = performance.now();
-    dropElapsed = 0;
-    impactIndex = -1;
-    lastTime = dropStart;
-    arrival.dataset.state = 'falling';
-  } else arrival.dataset.state = 'ready';
-  // Position and shade the first frame before revealing the WebGL canvas.
-  // Otherwise a cached load can flash the chip at rest before its fall starts.
-  if (frame) cancelAnimationFrame(frame);
-  render(performance.now());
-  arrival.classList.add('model-loaded');
-}).catch(error => {
-  console.warn('3D unavailable; showing the club logo.', error);
-  showFallback();
-});
+function startDrop(){
+  if(!motion.matches&&scrollY<24){dropStart=performance.now();dropElapsed=0;impactIndex=-1;lastTime=dropStart;arrival.dataset.state='falling'}
+  else {dropStart=null;arrival.dataset.state='ready'}
+  requestFrame();
+}
+// Let text paint before creating a GPU context; fetch only the selected original-model LOD.
+requestAnimationFrame(()=>requestAnimationFrame(()=>{
+ import('./model.js').then(async({createChip})=>{
+  model=await createChip(arrival,showFallback);lastDrawnPose=null;
+  layout();startDrop();
+  if(frame)cancelAnimationFrame(frame);
+  render(performance.now());arrival.classList.add('model-loaded');
+ }).catch(error=>{console.warn('3D unavailable; showing the club logo.',error);showFallback()});
+}));

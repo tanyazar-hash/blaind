@@ -17,10 +17,4 @@ export async function syncSiteComponents(){
   if(!html.includes('href="/legal/footer.css"'))html=html.replace('</head>','<link rel="stylesheet" href="/legal/footer.css">\n</head>');
   if(html!==await readFile(file,'utf8'))await writeFile(file,html);
  }
- const collection=resolve(root,'aces.html');let html=await readFile(collection,'utf8');
- const marker=/<!-- site:legal -->[\s\S]*?<!-- \/site:legal -->/;
- if(!marker.test(html))throw new Error('Missing legal footer marker in aces.html');
- html=html.replace(marker,'<!-- site:legal -->\n'+legalLinks.trim()+'\n<!-- /site:legal -->');
- if(!html.includes('href="/legal/footer.css"'))html=html.replace('</head>','<link rel="stylesheet" href="/legal/footer.css">\n</head>');
- if(html!==await readFile(collection,'utf8'))await writeFile(collection,html);
 }

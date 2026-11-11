@@ -4,6 +4,6 @@
 .legal-footer a:hover{color:#b99a65}.legal-footer a:focus-visible{outline:2px solid #b99a65;outline-offset:4px}
 .legal-footer .legal-footer-note{max-width:1000px;margin:14px 0 0;font:10px/1.9 Manrope,Arial,sans-serif;color:#aaa69a;overflow-wrap:anywhere}
 .legal-footer-note strong{color:#b99a65;font-weight:600}.legal-footer-note a{color:inherit;text-decoration:underline;text-underline-offset:3px}
-.aces-legal-footer{padding:0 6% 28px;background:#101110;position:relative;z-index:3}
-@media(max-width:600px){.site-footer .legal-links,.legal-footer .legal-links{gap:10px 18px}.legal-footer .legal-footer-note{font-size:10px}.aces-legal-footer{padding-inline:7%}}
+
+@media(max-width:600px){.site-footer .legal-links,.legal-footer .legal-links{gap:10px 18px}.legal-footer .legal-footer-note{font-size:10px}}
 @media print{.legal-footer{display:none}}

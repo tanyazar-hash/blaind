@@ -6,7 +6,7 @@ menu?.addEventListener('click',()=>menu.setAttribute('aria-expanded',String(mobi
 mobileNav?.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeSiteMenu));
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeSiteMenu()});
 document.addEventListener('click',event=>{if(header&&!header.contains(event.target))closeSiteMenu()});
-window.addEventListener('resize',()=>{if(innerWidth>600)closeSiteMenu()},{passive:true});
+window.addEventListener('resize',()=>{if(innerWidth>760)closeSiteMenu()},{passive:true});
 window.addEventListener('pageshow',closeSiteMenu);
 
 const entrances=new WeakMap();
@@ -16,8 +16,9 @@ function showContent(node){
  node.classList.add('site-visible');
  if(reduced.matches)return;
  const hero=node.classList.contains('site-hero-reveal');
+ const blur=hero&&!matchMedia('(pointer: coarse)').matches;
  const animation=node.animate([
-  {opacity:0,transform:`translate3d(0,${hero?26:18}px,0)`,filter:hero?'blur(6px)':'none'},
+  {opacity:0,transform:`translate3d(0,${hero?26:18}px,0)`,filter:blur?'blur(6px)':'none'},
   {opacity:1,transform:'none',filter:'none'}
  ],{duration:hero?1100:760,delay:hero?Number(node.style.getPropertyValue('--hero-step'))*140:0,easing:'cubic-bezier(.22,.61,.36,1)',fill:'backwards'});
  entrances.set(node,animation);
