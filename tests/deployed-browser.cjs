@@ -20,6 +20,8 @@ const {chromium}=require('playwright');
     await page.goto(base.href,{waitUntil:'networkidle'});
     if(new URL(page.url()).hostname==='vercel.com'&&new URL(page.url()).pathname.startsWith('/login'))throw new Error('Vercel Deployment Protection requires SSO before the application loads. Make the configured production URL public in Vercel Project Settings > Deployment Protection, or configure a public production domain. Keep the application Supabase Auth and RLS enabled.');
     current=await page.locator('.site-nav a').evaluateAll((links,arena)=>links.some(a=>new URL(a.href).pathname===arena),base.pathname+'arena/');
+    // The polished home must expose its keyboard entry, not an older cached build.
+    current=current&&await page.locator('a.site-skip[href="#main-content"]').count()===1;
     if(current)break;
     await page.waitForTimeout(5000);
    }
