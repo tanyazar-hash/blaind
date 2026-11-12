@@ -31,7 +31,7 @@ const {startSite,browserOptions}=require('./club-fixture.cjs');
      await page.waitForFunction(()=>document.querySelectorAll('.tournament-card').length===3);assert.equal(await page.locator('#ranking').count(),0);
      for(const link of await page.locator('.tournament-signup').all())assert.equal(await link.getAttribute('href'),'https://t.me/asushedulebot');
     }
-    if(path==='/about/'){assert.equal(await page.locator('main picture').count(),3);for(const image of await page.locator('main picture img').all()){await image.scrollIntoViewIfNeeded();await image.evaluate(img=>img.decode())}}
+    if(path==='/about/'){assert.equal(await page.locator('main picture').count(),3);for(const image of await page.locator('main picture img').all()){await image.scrollIntoViewIfNeeded();await image.evaluate(img=>img.decode())}assert.equal(await page.locator('.about-wide img').evaluate(img=>img.naturalWidth>=img.clientWidth-2),true,'wide group photo declares its actual display width')}
     if(path==='/rental/'){
      assert.equal(await page.locator('.rental-card').count(),2);assert.match(await page.locator('.rental-card').first().innerText(),/до 9 человек[\s\S]*700 ₽/);assert.match(await page.locator('.rental-card').last().innerText(),/500 ₽ с человека/);
      for(const link of await page.locator('.rental-card .btn').all())assert.equal(await link.getAttribute('href'),'https://t.me/asushedulebot');
