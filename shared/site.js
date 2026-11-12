@@ -4,7 +4,11 @@ const header=document.querySelector('.site-header'),menu=header?.querySelector('
 export function closeSiteMenu(){mobileNav?.classList.remove('open');menu?.setAttribute('aria-expanded','false')}
 menu?.addEventListener('click',()=>menu.setAttribute('aria-expanded',String(mobileNav.classList.toggle('open'))));
 mobileNav?.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeSiteMenu));
-document.addEventListener('keydown',event=>{if(event.key==='Escape')closeSiteMenu()});
+document.addEventListener('keydown',event=>{
+ if(event.key!=='Escape'||menu?.getAttribute('aria-expanded')!=='true')return;
+ const returnFocus=mobileNav?.contains(document.activeElement);closeSiteMenu();
+ if(returnFocus)menu.focus({preventScroll:true});
+});
 document.addEventListener('click',event=>{if(header&&!header.contains(event.target))closeSiteMenu()});
 window.addEventListener('resize',()=>{if(innerWidth>760)closeSiteMenu()},{passive:true});
 window.addEventListener('pageshow',closeSiteMenu);
@@ -58,6 +62,8 @@ reduced.addEventListener('change',()=>{if(reduced.matches)document.querySelector
 // Native details remain usable without JavaScript; animation also handles quick reversals.
 for(const details of document.querySelectorAll('details.event')){
  const summary=details.querySelector('summary');let expanded=details.open,animation;
+ function settle(){animation?.cancel();animation=null;details.open=expanded;details.style.overflow='';document.dispatchEvent(new Event('site:layout'))}
+ reduced.addEventListener('change',()=>{if(reduced.matches&&animation)settle()});
  summary.setAttribute('aria-expanded',String(expanded));
  summary.addEventListener('click',event=>{
   event.preventDefault();expanded=!expanded;
@@ -65,7 +71,7 @@ for(const details of document.querySelectorAll('details.event')){
   summary.setAttribute('aria-expanded',String(expanded));
   const border=details.offsetHeight-details.clientHeight;
   const target=(expanded?details.scrollHeight:summary.getBoundingClientRect().height)+border;
-  if(reduced.matches){details.open=expanded;document.dispatchEvent(new Event('site:layout'));return}
+  if(reduced.matches){settle();return}
   details.style.overflow='hidden';
   animation=details.animate([{height:from+'px'},{height:target+'px'}],{duration:360,easing:'cubic-bezier(.22,.61,.36,1)'});
   animation.finished.then(()=>{details.open=expanded;details.style.overflow='';animation=null;document.dispatchEvent(new Event('site:layout'))}).catch(()=>{});

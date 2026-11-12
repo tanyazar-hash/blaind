@@ -58,7 +58,7 @@ html:has(.public-page){scrollbar-gutter:stable}
 @media(prefers-reduced-motion:reduce){.public-page.site-motion .site-reveal.site-hero-reveal,.public-page.site-motion .site-reveal.site-hero-reveal.site-visible{opacity:1;transform:none;filter:none;transition:none;transition-delay:0s}}
 
 .site-footer .site-credit{margin:18px 0 0;text-align:center;font-size:8px;line-height:1.8;letter-spacing:.12em;color:var(--muted)}
-.site-footer .site-credit a{color:var(--gold);transition:color .25s}
+.site-footer .site-credit a{color:var(--gold);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;transition:color .25s}
 .site-footer .site-credit a:hover{color:var(--paper)}
 
 /* Fluid layouts keep the original typography and palette without empty mobile stages. */
@@ -103,3 +103,9 @@ html:has(.public-page){scrollbar-gutter:stable}
  .home-page{position:relative}
  .home-page .object-scene{position:absolute;inset:0 0 auto;overflow:hidden}
 }
+
+/* Shared keyboard entry and focus treatment; invisible until requested. */
+.site-skip{position:fixed;left:16px;top:16px;z-index:100;background:var(--gold);color:var(--bg);padding:14px 18px;font:12px/1.5 Manrope,Arial,sans-serif;transform:translateY(calc(-100% - 24px))}
+.site-skip:focus{transform:none}
+.legal-table-wrap:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.public-page input:focus-visible,.public-page select:focus-visible{outline:2px solid var(--gold);outline-offset:4px}

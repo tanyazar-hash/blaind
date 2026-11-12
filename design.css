@@ -1,4 +1,4 @@
-:root{--bg:#101110;--paper:#e9e5da;--muted:#99958b;--gold:#b99a65;--line:#b99a652b}
+:root{color-scheme:dark;--bg:#101110;--paper:#e9e5da;--muted:#99958b;--gold:#b99a65;--line:#b99a652b}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--paper);font-family:Manrope,Arial,sans-serif;overflow-x:hidden}

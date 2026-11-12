@@ -219,6 +219,7 @@ layout();
 document.fonts.ready.then(() => layout());
 
 function showFallback() {
+  model?.dispose();
   model = null;
   dropStart = null;
   dropAnimation?.cancel();dropAnimation=null;

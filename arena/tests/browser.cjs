@@ -164,14 +164,14 @@ async function loaded(page){
   const fontCSS=fs.readFileSync(path.join(root,'arena/arena.css'),'utf8').split('\n').slice(0,3).join('\n').replaceAll('url("./fonts/','url("'+base+'/arena/fonts/');
   await navigation.route('https://fonts.googleapis.com/**',r=>r.fulfill({contentType:'text/css',body:fontCSS}));
   await navigation.goto(base+'/');
-  assert.equal(await navigation.locator('header a[href="/arena"]').count(),2);
-  await navigation.locator('header>nav:not(.mobile-nav) a[href="/arena"]').click();
+  assert.equal(await navigation.locator('header a[href="/arena/"]').count(),2);
+  await navigation.locator('header>nav:not(.mobile-nav) a[href="/arena/"]').click();
   await navigation.waitForURL(/\/arena\/?$/);
   await navigation.locator('#ranking-body tr').first().waitFor();
   await navigation.setViewportSize({width:390,height:844});
   await navigation.goto(base+'/');
   await navigation.locator('.menu').click();
-  await navigation.locator('#site-mobile-nav a[href="/arena"]').click();
+  await navigation.locator('#site-mobile-nav a[href="/arena/"]').click();
   await navigation.waitForURL(/\/arena\/?$/);
   await navigation.locator('#ranking-body tr').first().waitFor();
   await navigation.close();

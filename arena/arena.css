@@ -4,8 +4,6 @@
 .arena-page main{position:relative;z-index:2;animation:arena-entry .6s ease both;transition:opacity .14s,transform .14s}
 .arena-page.page-exit main{opacity:0;transform:translateY(-5px)}
 @keyframes arena-entry{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.skip-link{position:fixed;left:20px;top:-90px;z-index:100;padding:15px 20px;background:var(--gold);color:var(--bg);font-size:12px}
-.skip-link:focus{top:16px}
 .arena-container{max-width:1320px;margin:0 auto}
 .arena-page .arena-hero{padding:90px 9% 32px;border:0;min-height:680px}
 .hero-layout{display:grid;grid-template-columns:1.2fr .9fr;align-items:center;gap:80px}
@@ -50,7 +48,7 @@
 [data-direction=asc] .direction-icon{transform:rotate(225deg);margin-top:3px}
 .ranking-meta{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:20px 0 15px}
 .ranking-meta p{font-size:10px;color:var(--muted);margin:0}
-.ranking-meta>span{font-size:7px;letter-spacing:.18em;color:#726b5e}
+.ranking-meta>span{font-size:8px;letter-spacing:.16em;color:var(--muted)}
 .ranking-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
 .ranking-table th{text-align:left;color:#8b8373;font-size:9px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;padding:16px 20px;border-bottom:1px solid var(--line)}
 .ranking-table th:first-child{width:90px}
@@ -63,7 +61,7 @@ th[aria-sort] .column-arrow{display:inline-block}
 th[aria-sort=ascending] .column-arrow{transform:rotate(225deg);margin-top:3px}
 .ranking-table td{padding:19px 20px;border-bottom:1px solid #b99a6516;font-variant-numeric:tabular-nums}
 .ranking-table td:not(.player-name):not(.rank-cell){text-align:right}
-.rank-cell{color:#80786a;font-size:11px}
+.rank-cell{color:var(--muted);font-size:11px}
 .rank-badge{display:inline-flex;justify-content:center;align-items:center;width:31px;height:31px;border:1px solid transparent;border-radius:50%}
 .player-name{color:var(--paper);font-size:13px;font-weight:500;overflow-wrap:anywhere}
 .player-played,.player-wins{color:var(--muted)}

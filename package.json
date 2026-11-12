@@ -12,9 +12,12 @@
     "test": "node --test arena/tests/*.test.mjs tests/*.test.mjs",
     "test:browser": "node tests/browser.cjs",
     "assets:prepare": "node scripts/prepare-assets.mjs",
-    "test:performance": "node tests/performance-browser.cjs"
+    "test:performance": "node tests/performance-browser.cjs",
+    "test:accessibility": "node tests/accessibility-browser.cjs",
+    "test:polish": "node tests/polish-browser.cjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@electric-sql/pglite": "0.5.16",
     "@gltf-transform/core": "4.5.1",
     "@gltf-transform/extensions": "4.5.1",

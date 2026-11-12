@@ -32,6 +32,16 @@ jobs:
         run: npm run build
       - name: Unit and database tests
         run: npm test
+      - name: Install Chromium for browser checks
+        run: npx playwright install --with-deps chromium
+      - name: Keyboard, motion, WebGL recovery and admin regression checks
+        run: node tests/polish-browser.cjs
+        env:
+          PLAYWRIGHT_BUNDLED_CHROMIUM: '1'
+      - name: Accessibility regression checks
+        run: npm run test:accessibility
+        env:
+          PLAYWRIGHT_BUNDLED_CHROMIUM: '1'
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
@@ -41,8 +51,6 @@ jobs:
           SITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
           STATIC_HOSTING: '1'
           HOSTED_ADMIN_URL: https://blaind-tanyazar-hashs-projects.vercel.app/admin/
-      - name: Install Chromium for hosting smoke tests
-        run: npx playwright install --with-deps chromium
       - name: Test the built site using a plain static server
         run: node tests/hosting-browser.cjs
         env:

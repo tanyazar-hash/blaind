@@ -1,0 +1,50 @@
+const assert=require('node:assert/strict');
+const {mkdtemp,rm}=require('node:fs/promises');
+const {resolve}=require('node:path');
+const {chromium}=require('playwright');
+(async()=>{
+ const {serve}=await import('../scripts/dev-server.mjs'),{createArenaBackend}=await import('../server/app.js');
+ const {pgStore}=await import('./pg-store.mjs'),{authFixture,testPassword}=await import('./auth-fixture.mjs');
+ const dir=await mkdtemp('/tmp/blaind-polish-test-'),auth=authFixture(),store=await pgStore(dir,{identity:auth.identity});
+ const server=serve({root:resolve(__dirname,'../public'),backend:createArenaBackend({store,auth,env:{NODE_ENV:'test'}})});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
+ const browser=await chromium.launch({...(process.env.PLAYWRIGHT_BUNDLED_CHROMIUM==='1'?{}:{executablePath:'/usr/bin/chromium'}),args:['--no-sandbox','--enable-unsafe-swiftshader']});
+ const context=await browser.newContext({viewport:{width:390,height:844}}),errors=[];
+ context.on('page',page=>page.on('pageerror',e=>errors.push(e.message)));
+ try{
+  const page=await context.newPage();await page.goto(base+'/');
+  await page.keyboard.press('Tab');assert.equal(await page.locator('.site-skip').evaluate(n=>n===document.activeElement),true);
+  await page.keyboard.press('Enter');assert.equal(await page.locator('main').evaluate(n=>n===document.activeElement),true);
+  await page.locator('.menu').click();await page.keyboard.press('Tab');assert.equal(await page.locator('#site-mobile-nav').evaluate(n=>n.contains(document.activeElement)),true);
+  await page.keyboard.press('Escape');assert.equal(await page.locator('.menu').getAttribute('aria-expanded'),'false');assert.equal(await page.locator('.menu').evaluate(n=>n===document.activeElement),true);
+  const summary=page.locator('details.event summary').first();await summary.click();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.waitForFunction(()=>{const d=document.querySelector('details.event');return d.open&&d.style.overflow===''&&d.getAnimations().length===0});
+  await summary.click();assert.equal(await summary.locator('..').evaluate(n=>n.open),false);
+  await page.goto(base+'/legal/privacy.html');const table=page.getByRole('region',{name:'Цели, данные и основания обработки'});await table.focus();await page.keyboard.press('ArrowRight');await page.waitForFunction(()=>document.querySelector('.legal-table-wrap').scrollLeft>0);
+  await page.goto(base+'/atmosphere/');await page.route('**/atmosphere/images/atm1-1280.webp',r=>r.abort());
+  const photo=page.locator('.atm-frame').first();await photo.click();await page.locator('#atm-viewer-error').waitFor({state:'visible'});
+  assert.equal(await page.locator('#atm-viewer-original').getAttribute('href'),base+'/atm1.jpg');
+  await page.keyboard.press('ArrowRight');await page.locator('#atm-viewer-image.is-loaded').waitFor();await page.keyboard.press('Escape');
+  await page.waitForFunction(()=>!document.getElementById('atm-viewer').open);assert.equal(await photo.evaluate(n=>n===document.activeElement),true);
+  await page.goto(base+'/');await page.locator('.model-loaded canvas').waitFor({timeout:60000});
+  await page.locator('canvas').evaluate(canvas=>canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
+  await page.locator('.fallback-visible .chip-fallback').waitFor({state:'visible'});assert.equal(await page.locator('canvas').count(),0,'lost GPU context is released');
+  await page.goto(base+'/admin/');await page.locator('[name=email]').fill('admin@example.test');await page.locator('[name=password]').fill(testPassword);await page.locator('#login-form button').click();await page.locator('#workspace').waitFor({state:'visible'});
+  await page.locator('[data-tab=tournaments]').click();
+  const up=()=>page.getByRole('button',{name:'Переместить турнир выше'}).first(),down=()=>page.getByRole('button',{name:'Переместить турнир ниже'}).last();
+  assert.equal(await up().isDisabled(),true);assert.equal(await down().isDisabled(),true);
+  await page.locator('#list').getByText('Golden Night',{exact:true}).click();assert.equal(await page.locator('#list button[aria-current=true]').innerText(),'Golden Night');assert.equal(await page.locator('[name=title]').evaluate(n=>n===document.activeElement),true);
+  assert.equal(await page.getByRole('textbox',{name:'Название параметра',exact:true}).count(),3);assert.equal(await page.getByRole('textbox',{name:'Значение параметра',exact:true}).count(),3);
+  await page.route('**/api/admin?resource=snapshot',route=>route.fulfill({status:503,contentType:'text/html',body:'Upstream unavailable'}));
+  await page.locator('#reload').click();await page.getByText('Панель временно недоступна. Обновите страницу и повторите попытку.',{exact:true}).waitFor();
+  assert.equal(await up().isDisabled(),true);assert.equal(await down().isDisabled(),true);assert.equal(await page.locator('#workspace').isVisible(),true);
+  await page.unroute('**/api/admin?resource=snapshot');await page.locator('#reload').click();await page.getByText('Данные обновлены.',{exact:true}).waitFor();assert.equal(await up().isDisabled(),true);assert.equal(await down().isDisabled(),true);
+  // A poster upload on a slow uplink may legitimately outlast the JSON timeout.
+  await page.route('**/api/admin?resource=upload',async route=>{if(route.request().method()==='POST')await new Promise(resolve=>setTimeout(resolve,21000));await route.continue()});
+  await page.locator('input[type=file]').setInputFiles('arena/images/golden-night.webp');await page.locator('#editor button[type=submit]').click();
+  await page.getByText('Изменения сохранены и опубликованы.',{exact:true}).waitFor({timeout:45000});
+  assert.ok((await store.readDocument()).document.tournaments.find(t=>t.title==='Golden Night').imageStorageKey,'slow upload reached storage and was saved');
+  assert.deepEqual(errors,[]);console.log('PASS keyboard skip/menu/table, motion preference changes mid-animation, gallery recovery/focus, real WebGL context-loss cleanup, admin order boundaries, selected record and recovery from non-JSON server failure and a poster upload delayed beyond 20 seconds.');
+ }finally{await browser.close();await new Promise(r=>server.close(r));await store.db.close();await rm(dir,{recursive:true,force:true})}
+})().catch(error=>{console.error(error);if(process.env.GITHUB_ACTIONS)console.error('::error::'+String(error.stack||error).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));process.exitCode=1});

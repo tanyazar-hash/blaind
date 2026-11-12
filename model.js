@@ -38,11 +38,23 @@ export async function createChip(container, onContextLost) {
   rim.position.set(4, 1, -2); scene.add(rim);
   const fill = new THREE.DirectionalLight(0xffffff, 1);
   fill.position.set(2, -3, 4); scene.add(fill);
+  function releaseResources(){
+    const geometries=new Set(),materials=new Set(),textures=new Set();
+    scene.traverse(node=>{
+      if(node.geometry)geometries.add(node.geometry);
+      for(const material of node.material?(Array.isArray(node.material)?node.material:[node.material]):[]){
+        materials.add(material);
+        for(const value of Object.values(material))if(value?.isTexture)textures.add(value);
+      }
+    });
+    for(const resource of [...geometries,...textures,...materials])resource.dispose();
+    environment.dispose();renderer.dispose();canvas.remove();
+  }
   let root;
   try {
     root = (await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(sitePath(mobile?models.mobile:models.desktop))).scene;
   } catch (error) {
-    environment.dispose(); renderer.dispose();
+    releaseResources();
     throw error;
   }
   const bounds = new THREE.Box3().setFromObject(root);
@@ -55,7 +67,8 @@ export async function createChip(container, onContextLost) {
   pivot.add(normalized); scene.add(pivot);
 
   // The same reference-based Cyrillic logo is used in the header and on the GLB.
-  const texture = await new THREE.TextureLoader().loadAsync(sitePath('assets/club-logo.svg'));
+  let texture;
+  try{texture=await new THREE.TextureLoader().loadAsync(sitePath('assets/club-logo.svg'))}catch(error){releaseResources();throw error}
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = Math.min(4,renderer.capabilities.getMaxAnisotropy());
   const material = new THREE.MeshStandardMaterial({
@@ -105,8 +118,7 @@ export async function createChip(container, onContextLost) {
   }
   function dispose(){
     if(disposed)return;disposed=true;
-    scene.traverse(node=>{node.geometry?.dispose();if(node.material)for(const mat of Array.isArray(node.material)?node.material:[node.material]){for(const value of Object.values(mat))if(value?.isTexture)value.dispose();mat.dispose()}});
-    environment.dispose();renderer.dispose();canvas.remove();
+    releaseResources();
   }
   canvas.dataset.lod=mobile?'mobile':'desktop';
   return { draw, resize, reduceQuality, dispose };
