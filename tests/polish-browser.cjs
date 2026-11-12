@@ -17,10 +17,7 @@ const {chromium}=require('playwright');
   await page.keyboard.press('Enter');assert.equal(await page.locator('main').evaluate(n=>n===document.activeElement),true);
   await page.locator('.menu').click();await page.keyboard.press('Tab');assert.equal(await page.locator('#site-mobile-nav').evaluate(n=>n.contains(document.activeElement)),true);
   await page.keyboard.press('Escape');assert.equal(await page.locator('.menu').getAttribute('aria-expanded'),'false');assert.equal(await page.locator('.menu').evaluate(n=>n===document.activeElement),true);
-  const summary=page.locator('details.event summary').first();await summary.click();
   await page.emulateMedia({reducedMotion:'reduce'});
-  await page.waitForFunction(()=>{const d=document.querySelector('details.event');return d.open&&d.style.overflow===''&&d.getAnimations().length===0});
-  await summary.click();assert.equal(await summary.locator('..').evaluate(n=>n.open),false);
   await page.goto(base+'/legal/privacy.html');const table=page.getByRole('region',{name:'Цели, данные и основания обработки'});await table.focus();await page.keyboard.press('ArrowRight');await page.waitForFunction(()=>document.querySelector('.legal-table-wrap').scrollLeft>0);
   await page.goto(base+'/atmosphere/');await page.route('**/atmosphere/images/atm1-1280.webp',r=>r.abort());
   const photo=page.locator('.atm-frame').first();await photo.click();await page.locator('#atm-viewer-error').waitFor({state:'visible'});
@@ -45,6 +42,6 @@ const {chromium}=require('playwright');
   await page.locator('input[type=file]').setInputFiles('arena/images/golden-night.webp');await page.locator('#editor button[type=submit]').click();
   await page.getByText('Изменения сохранены и опубликованы.',{exact:true}).waitFor({timeout:45000});
   assert.ok((await store.readDocument()).document.tournaments.find(t=>t.title==='Golden Night').imageStorageKey,'slow upload reached storage and was saved');
-  assert.deepEqual(errors,[]);console.log('PASS keyboard skip/menu/table, motion preference changes mid-animation, gallery recovery/focus, real WebGL context-loss cleanup, admin order boundaries, selected record and recovery from non-JSON server failure and a poster upload delayed beyond 20 seconds.');
+  assert.deepEqual(errors,[]);console.log('PASS keyboard skip/menu/table, gallery recovery/focus, real WebGL context-loss cleanup, admin order boundaries, selected record and recovery from non-JSON server failure and a poster upload delayed beyond 20 seconds.');
  }finally{await browser.close();await new Promise(r=>server.close(r));await store.db.close();await rm(dir,{recursive:true,force:true})}
 })().catch(error=>{console.error(error);if(process.env.GITHUB_ACTIONS)console.error('::error::'+String(error.stack||error).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));process.exitCode=1});

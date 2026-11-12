@@ -1,58 +1,15 @@
-const assert=require('node:assert/strict');const{resolve}=require('node:path');const{chromium}=require('playwright');
-(async()=>{
- const{serve}=await import('../scripts/dev-server.mjs');const server=serve({root:resolve(__dirname,'../public')});await new Promise(r=>server.listen(0,'127.0.0.1',r));
- const base='http://127.0.0.1:'+server.address().port;
- const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--enable-unsafe-swiftshader']});
- try{
-  for(const width of[393,1440]){
-   const page=await browser.newPage({viewport:{width,height:900},deviceScaleFactor:1}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-   await page.goto(base+'/',{waitUntil:'commit'});
-   await page.waitForFunction(()=>{const a=document.querySelector('.object-arrival')?.getAnimations()[0];if(!a)return false;window.chipFall=a;a.pause();a.currentTime=600;return true},{},{timeout:60000,polling:10});
-   await page.locator('.model-loaded canvas').waitFor({state:'visible',timeout:60000});
-   const fall=await page.evaluate(async()=>{
-    const arrival=document.querySelector('.object-arrival'),position=document.querySelector('.object-position'),animation=window.chipFall;
-    const samples=[];
-    // Sample the actual compositor animation, including every rebound.
-    for(const time of[0,150,300,450,600,750,960,1050,1210,1300,1530]){
-     animation.pause();animation.currentTime=time;
-     await new Promise(r=>requestAnimationFrame(r));
-     const rect=position.getBoundingClientRect(),matrix=new DOMMatrixReadOnly(getComputedStyle(arrival).transform);
-     samples.push({time,lift:matrix.m42,x:rect.x+rect.width/2});
-    }
-    animation.play();return samples;
-   });
-   assert.ok(fall[0].lift< -300);assert.ok(fall[2].lift>fall[1].lift);assert.ok(Math.abs(fall[4].lift)<1);assert.ok(fall[5].lift< -20);assert.ok(fall[7].lift<0);assert.ok(Math.abs(fall.at(-1).lift)<1);
-   if(width<=600)assert.ok(fall.every(s=>Math.abs(s.x-width/2)<1),'entire mobile fall stays centered');
-   await page.waitForFunction(()=>document.querySelector('.object-arrival').dataset.state==='ready');
-   for(const id of['about','experience','events','contact','events','experience','about','top']){
-    const before=await page.locator('.object-position').getAttribute('style');
-    await page.evaluate(id=>scrollTo({top:id==='top'?0:document.getElementById(id).offsetTop,behavior:'instant'}),id);
-    await page.waitForFunction(id=>document.querySelector('.object-position').dataset.chapter===id,id);
-    await page.waitForFunction(({width,id})=>{
-     const n=document.querySelector('.object-position'),r=n.getBoundingClientRect();
-     if(width<=600&&['about','experience','events'].includes(id))return getComputedStyle(n).visibility==='hidden';
-     if(id==='contact'){const s=document.querySelector('.final-object-space').getBoundingClientRect();return Math.abs(r.x+r.width/2-width/2)<2&&Math.abs(r.y+r.height/2-(s.y+s.height/2))<2}
-     const pose=width<=600?[.5,null]:{top:[.79,.47],about:[.77,.42],experience:[.24,.37],events:[.81,.43]}[id];
-     return Math.abs(r.x+r.width/2-width*pose[0])<2&&(pose[1]===null||Math.abs(r.y+r.height/2-900*pose[1])<2);
-    },{width,id},{timeout:12000});
-    if(id==='top')await page.waitForFunction(()=>document.querySelector('.object-arrival').dataset.state==='ready');
-    await page.screenshot({path:`/tmp/blaind-repaired-${width}-${id}.png`});
-    const box=await page.locator('.object-position').boundingBox(),visibility=await page.locator('.object-position').evaluate(n=>getComputedStyle(n).visibility);
-    if(width<=600&&['about','experience','events'].includes(id))assert.equal(visibility,'hidden','mobile fully leaves screen '+id);
-    else{
-     assert.equal(visibility,'visible');assert.notEqual(await page.locator('.object-position').getAttribute('style'),before);
-     if(width>600&&id!=='contact'){
-      const pose={top:[.79,.47],about:[.77,.42],experience:[.24,.37],events:[.81,.43]}[id];
-      assert.ok(Math.abs(box.x+box.width/2-width*pose[0])<2,'restored desktop x '+id);assert.ok(Math.abs(box.y+box.height/2-900*pose[1])<2,'restored desktop y '+id);
-     }
-     if(width<=600&&id==='contact'){
-      const space=await page.locator('.final-object-space').boundingBox();assert.ok(box.y>=space.y&&box.y+box.height<=space.y+space.height);assert.ok(Math.abs(box.x+box.width/2-width/2)<2);
-     }
-    }
-    assert.equal(await page.locator('.object-scene').evaluate(n=>n.style.clipPath),'','chip is never cropped');
-   }
-   await page.screenshot({path:'/tmp/blaind-repaired-'+width+'.png'});assert.deepEqual(errors,[]);await page.close();
-  }
-  console.log('PASS actual WebGL, full centered fall and rebounds, original five desktop poses, mobile fly-out/return without clipping, reverse scroll and no page errors.');
- }finally{await browser.close();await new Promise(r=>server.close(r))}
-})().catch(e=>{console.error(e);process.exitCode=1});
+const assert=require('node:assert/strict');const{chromium}=require('playwright');const{startSite,browserOptions}=require('./club-fixture.cjs');
+(async()=>{const site=await startSite(),browser=await chromium.launch(browserOptions),errors=[];try{
+ for(const width of [320,390,768,1440]){
+  const context=await browser.newContext({viewport:{width,height:900}});await context.addInitScript(()=>{Object.defineProperty(navigator,'hardwareConcurrency',{get:()=>8});Object.defineProperty(navigator,'deviceMemory',{get:()=>8});window.frameRequests=0;const raf=window.requestAnimationFrame.bind(window);window.requestAnimationFrame=fn=>{window.frameRequests++;return raf(fn)}});
+  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(site.base+'/');await page.locator('.model-loaded canvas').waitFor({timeout:60000});await page.waitForTimeout(300);
+  const frameRequests=await page.evaluate(()=>window.frameRequests);
+  const matrix=await page.locator('canvas').evaluate(n=>n.toDataURL()),initial=await page.locator('.chip-stage').evaluate(n=>({top:n.getBoundingClientRect().top+scrollY,left:n.getBoundingClientRect().left}));
+  assert.equal(await page.locator('canvas').getAttribute('data-lod'),width<=900?'mobile':'desktop');
+  await page.locator('.club-directions').scrollIntoViewIfNeeded();await page.waitForTimeout(350);assert.equal(await page.locator('canvas').evaluate(n=>n.toDataURL()),matrix,'no continuous rotation or scroll rendering');assert.equal(await page.evaluate(()=>window.frameRequests),frameRequests,'scroll does not schedule animation frames');
+  const after=await page.locator('.chip-stage').evaluate(n=>({top:n.getBoundingClientRect().top+scrollY,left:n.getBoundingClientRect().left}));assert.deepEqual(after,initial);assert.equal(await page.evaluate(()=>document.getAnimations().filter(a=>a.playState==='running').length),0);
+  await page.setViewportSize({width:width===1440?1024:width,height:780});await page.waitForTimeout(200);assert.equal(await page.locator('canvas').count(),1);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await page.locator('canvas').evaluate(n=>n.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());await page.locator('.fallback-visible .chip-fallback').waitFor({state:'visible'});assert.equal(await page.locator('canvas').count(),0);await context.close();
+ }
+ assert.deepEqual(errors,[]);console.log('PASS actual desktop/mobile GLB, still pose without scroll/pointer animation, no render loop, one resized canvas, non-overlapping layout and context-loss logo fallback.');
+}finally{await browser.close();await site.close()}})().catch(e=>{console.error(e);if(process.env.GITHUB_ACTIONS)console.error('::error::'+String(e.stack||e).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));process.exitCode=1});

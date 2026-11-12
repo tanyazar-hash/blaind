@@ -1,40 +1,45 @@
 const assert=require('node:assert/strict');
-const {mkdtemp,mkdir,rm}=require('node:fs/promises');
 const {chromium}=require('playwright');
+const {startSite,browserOptions}=require('./club-fixture.cjs');
 (async()=>{
- const {pgStore}=await import('./pg-store.mjs'),{authFixture}=await import('./auth-fixture.mjs'),{serve}=await import('../scripts/dev-server.mjs'),{createArenaBackend}=await import('../server/app.js');
- const dir=await mkdtemp('/tmp/blaind-site-'),auth=authFixture(),store=await pgStore(dir,{identity:auth.identity});
- const server=serve({backend:createArenaBackend({store,auth,env:{NODE_ENV:'test'}})});await new Promise(r=>server.listen(0,'127.0.0.1',r));
- const base='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--enable-unsafe-swiftshader']});
- await mkdir('/tmp/blaind-unified',{recursive:true});const errors=[];
+ const {defaultDocument}=await import('../server/defaults.js');const doc=defaultDocument();
+ doc.players=Array.from({length:21},(_,i)=>({id:'p'+(i+1),nickname:'Player'+(i+1),points:2100-i*100,wins:i%6,tournamentsPlayed:20}));
+ const site=await startSite(doc),browser=await chromium.launch(browserOptions),errors=[],bad=[];
  try{
-  for(const width of[1440,1024,768,600,390,320]){
-   const geometries=[],headers=[],footers=[];
-   for(const [path,name,hero]of[['/','home','.hero'],['/arena','arena','.arena-hero'],['/atmosphere/','atmosphere','.atm-hero']]){
-    const p=await browser.newPage({viewport:{width,height:1000},reducedMotion:'reduce'});p.on('pageerror',e=>errors.push(name+': '+e.message));await p.goto(base+path);await p.evaluate(()=>document.fonts.ready);
-    if(name==='arena')await p.waitForFunction(()=>document.getElementById('players-total').textContent==='12');
-    assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,name+' overflow '+width);
-    const nav=p.locator('.site-header .site-nav');assert.deepEqual(await nav.locator('a').allTextContents(),['Главная','Арена','Атмосфера','Связаться']);assert.equal(await nav.locator('[aria-current=page]').count(),1);
-    headers.push((await p.locator('.site-header').innerHTML()).replace(/ aria-current="page"/g,''));footers.push((await p.locator('.site-footer').innerHTML()).replace(/ aria-current="page"/g,''));
-    geometries.push({head:await p.locator('.site-header').evaluate(n=>n.offsetHeight),hero:await p.locator(hero).evaluate(n=>n.offsetHeight)});
-    assert.equal(await p.locator('body').innerText().then(s=>s.includes('BLΛIND')||s.includes('Новосибирск')),false);
-    if(width<=600){await p.locator('.site-header .menu').click();assert.equal(await p.locator('#site-mobile-nav').isVisible(),true);await p.keyboard.press('Escape');assert.equal(await p.locator('.menu').getAttribute('aria-expanded'),'false')}
-    if(width===1440||width===390)await p.screenshot({path:'/tmp/blaind-unified/'+name+'-'+width+'.png'});
-    if(name==='home'){
-     await p.locator('.model-loaded canvas').waitFor({state:'visible'});
-     const model=await p.locator('.object-position').boundingBox(),copy=await p.locator('.hero-content').boundingBox();assert.ok(width>600||model.y+model.height<copy.y,'mobile hero chip avoids copy');
-     await p.locator('#events').scrollIntoViewIfNeeded();for(const summary of await p.locator('details.event summary').all()){await summary.click();assert.equal(await summary.getAttribute('aria-expanded'),'true');assert.equal(await summary.locator('..').locator('p').isVisible(),true);await summary.click();assert.equal(await summary.getAttribute('aria-expanded'),'false')}
-     assert.equal(await p.locator('#about a[href="/atmosphere/"]').count(),1);assert.equal(await p.locator('#events a[href="/arena/#tournaments"]').count(),1);
+  for(const width of [320,390,600,768,1024,1440]){
+   const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce'});
+   context.on('page',p=>{p.on('pageerror',e=>errors.push(e.message));p.on('response',r=>{if(r.url().startsWith(site.base)&&r.status()>=400)bad.push(r.status()+' '+r.url())})});
+   const page=await context.newPage();
+   for(const path of ['/','/arena/','/tournaments/','/about/','/rental/','/legal/','/legal/privacy.html','/legal/rules.html','/legal/terms.html','/legal/consents.html','/legal/sources.html']){
+    assert.equal((await page.goto(site.base+path)).status(),200,path);await page.evaluate(()=>document.fonts.ready);
+    assert.equal(await page.locator('main h1').count(),1,path);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,width+' '+path);
+    assert.deepEqual(await page.locator('.site-header .site-nav a').allTextContents(),['Главная','Рейтинг','Турниры','О нас','Аренда столов','Связаться']);
+    assert.equal(await page.locator('.legal-links a').count(),6);
+    if(width<=1100){await page.locator('.menu').click();await page.keyboard.press('Tab');assert.equal(await page.locator('#site-mobile-nav').evaluate(n=>n.contains(document.activeElement)),true);await page.keyboard.press('Escape');assert.equal(await page.locator('.menu').evaluate(n=>n===document.activeElement),true)}
+    if(path==='/'){
+     assert.equal(await page.locator('main>section').count(),2);assert.equal(await page.locator('.direction-card').count(),4);await page.locator('.model-loaded canvas').waitFor();
+     const copy=await page.locator('.club-hero-copy').boundingBox(),chip=await page.locator('.chip-stage').boundingBox();assert.ok(width<=700?copy.y+copy.height<=chip.y+1:copy.x+copy.width<=chip.x+1,'chip has its own non-overlapping space');
+     assert.match(await page.locator('main').innerText(),/18 лучших игроков/);assert.match(await page.locator('main').innerText(),/Без денежных ставок/);
     }
-    await p.locator('.site-footer').scrollIntoViewIfNeeded();assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await p.close();
+    if(path==='/arena/'){
+     await page.waitForFunction(()=>document.querySelectorAll('#ranking-body tr').length===21);assert.equal(await page.locator('.rank-finalist').count(),18);assert.equal(await page.locator('.arena-hero').count(),0);assert.ok((await page.locator('h1').boundingBox()).y<180);
+     await page.locator('#player-search').fill('Player19');assert.equal(await page.locator('#ranking-body tr').count(),1);assert.equal(await page.locator('.rank-finalist').count(),0);assert.equal(await page.locator('#ranking-body tr').getAttribute('data-rank'),'19');
+     await page.locator('#clear-search').click();await page.locator('#ranking-sort').selectOption('wins');assert.equal(await page.locator('.rank-finalist').count(),18);assert.equal(await page.locator('#ranking-body tr').evaluateAll(rows=>rows.every(n=>n.classList.contains('rank-finalist')===(Number(n.dataset.rank)<=18))),true);
+    }
+    if(path==='/tournaments/'){
+     await page.waitForFunction(()=>document.querySelectorAll('.tournament-card').length===3);assert.equal(await page.locator('#ranking').count(),0);
+     for(const link of await page.locator('.tournament-signup').all())assert.equal(await link.getAttribute('href'),'https://t.me/asushedulebot');
+    }
+    if(path==='/about/'){assert.equal(await page.locator('main picture').count(),3);for(const image of await page.locator('main picture img').all()){await image.scrollIntoViewIfNeeded();await image.evaluate(img=>img.decode())}}
+    if(path==='/rental/'){
+     assert.equal(await page.locator('.rental-card').count(),2);assert.match(await page.locator('.rental-card').first().innerText(),/до 9 человек[\s\S]*700 ₽/);assert.match(await page.locator('.rental-card').last().innerText(),/500 ₽ с человека/);
+     for(const link of await page.locator('.rental-card .btn').all())assert.equal(await link.getAttribute('href'),'https://t.me/asushedulebot');
+     for(const image of await page.locator('.rental-photo img').all())await image.evaluate(img=>img.decode());assert.doesNotMatch(await page.locator('main').innerText(),/за час|₽\s*\/\s*час|предоплат/);
+    }
    }
-   assert.equal(new Set(geometries.map(g=>g.head)).size,1,'same header height '+width);assert.equal(new Set(geometries.map(g=>g.hero)).size,1,'same hero height '+width);
-   assert.ok(headers.every(h=>h===headers[0]),'shared header markup');assert.ok(footers.every(f=>f===footers[0]),'shared footer markup');
+   await page.goto(site.base+'/arena/#tournaments');await page.waitForURL(site.base+'/tournaments/');await context.close();
   }
-  const p=await browser.newPage({viewport:{width:390,height:844}});p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'/');await p.locator('.model-loaded canvas').waitFor({state:'visible'});await p.waitForFunction(()=>document.querySelector('.object-arrival').dataset.state==='ready');
-  await p.locator('#events').scrollIntoViewIfNeeded();const summary=p.locator('details.event summary').first();await summary.click();await p.waitForTimeout(450);assert.equal(await summary.getAttribute('aria-expanded'),'true');await summary.click();await p.waitForTimeout(450);assert.equal(await summary.locator('..').evaluate(n=>n.open),false);
-  const before=await p.locator('.hero h1').evaluate(n=>getComputedStyle(n.querySelector('em')).fontStyle);assert.equal(before,'italic');
-  await p.goto(base+'/atmosphere/');await p.locator('.atm-frame').first().click();await p.locator('#atm-viewer-image.is-loaded').waitFor();await p.keyboard.press('Escape');await p.waitForFunction(()=>!document.getElementById('atm-viewer').open);assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-  assert.deepEqual(errors,[]);console.log('PASS shared chrome, equal hero heights, 320–1440px, active links, menus, Cyrillic brand, chip spacing/drop, accordions and Atmosphere viewer.');
- }finally{await browser.close();await new Promise(r=>server.close(r));await store.db.close();await rm(dir,{recursive:true,force:true})}
-})().catch(e=>{console.error(e);process.exitCode=1});
+  assert.deepEqual(errors,[]);assert.deepEqual(bad,[]);console.log('PASS simple five-page journey, six-link navigation, 320–1440px, 18 official rating places across search/sort, separate live schedule, official signup/booking contacts, three about photos, exact rental prices and legacy schedule link.');
+ }finally{await browser.close();await site.close()}
+})().catch(e=>{console.error(e);if(process.env.GITHUB_ACTIONS)console.error('::error::'+String(e.stack||e).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));process.exitCode=1});

@@ -7,13 +7,14 @@ import {rankPlayers,selectPlayers} from './ranking.js';
 /** @typedef {import('./types').RankedPlayer} RankedPlayer */
 /** @typedef {import('./types').Tournament} Tournament */
 const $=selector=>document.querySelector(selector);
+const hasRanking=!!$('#ranking'),hasTournaments=!!$('#tournaments');
+if(hasRanking&&location.hash==='#tournaments')location.replace(sitePath('tournaments/'));
 const numbers=new Intl.NumberFormat('ru-RU');
 const plural=new Intl.PluralRules('ru-RU');
-const motion=matchMedia('(prefers-reduced-motion: reduce)');
 const defaultZone='Asia/Novosibirsk';
 const state={ranked:[],query:'',sortBy:'points',direction:'desc',rows:new Map()};
-const rowAnimations=new Set(), detailAnimations=new Map();
 let returnFocus=null, tournamentPayload=null, activeTournamentIds;
+let liveRevision,liveBusy=false,livePlayers,liveTournaments;
 const tableWrap=$('#ranking-table-wrap'), tbody=$('#ranking-body');
 const rankingMessage=$('#ranking-message'), tournamentsMessage=$('#tournaments-message');
 const search=$('#player-search'),sort=$('#ranking-sort'),direction=$('#sort-direction');
@@ -44,17 +45,13 @@ function setFiltersEnabled(enabled){
   search.disabled=!enabled;sort.disabled=!enabled;direction.disabled=!enabled;
   document.querySelectorAll('[data-column-sort]').forEach(button=>{button.disabled=!enabled});
 }
-function showPlayerTotal(){
- const count=state.ranked.length;
- $('#players-total').textContent=numbers.format(count);
- $('#players-total').nextElementSibling.textContent=word(count,['игрок','игрока','игроков'])+' в рейтинге';
-}
 /** @param {RankedPlayer} player */
 function playerRow(player){
-  const row=element('tr',player.rank<=3?'rank-top rank-'+player.rank:'');
+  const row=element('tr',(player.rank<=18?'rank-finalist ':'')+(player.rank<=3?'rank-top rank-'+player.rank:''));
   row.dataset.playerId=player.id;row.dataset.rank=String(player.rank);
   const rank=element('td','rank-cell');
   rank.append(element('span','rank-badge',String(player.rank).padStart(2,'0')));
+  if(player.rank<=18)rank.setAttribute('aria-label','Место '+player.rank+' · входит в первые 18');
   const played=element('td','player-played',numbers.format(player.tournamentsPlayed));played.dataset.label='Турниры';
   const wins=element('td','player-wins',numbers.format(player.wins));wins.dataset.label='Победы';
   row.append(rank,element('td','player-name',player.nickname),played,wins,
@@ -62,8 +59,6 @@ function playerRow(player){
   return row;
 }
 function renderRanking(){
-  for(const animation of rowAnimations)animation.cancel();rowAnimations.clear();
-  const oldPositions=new Map([...tbody.rows].map(row=>[row.dataset.playerId,row.getBoundingClientRect().top]));
   const players=selectPlayers(state.ranked,state);
   const fragment=document.createDocumentFragment();
   for(const player of players){
@@ -91,24 +86,13 @@ function renderRanking(){
     if(th.dataset.sort===state.sortBy)th.setAttribute('aria-sort',ascending?'ascending':'descending');
     else th.removeAttribute('aria-sort');
   });
-  if(!motion.matches){
-    [...tbody.rows].forEach((row,index)=>{
-      const previous=oldPositions.get(row.dataset.playerId);
-      const delta=previous===undefined?7:previous-row.getBoundingClientRect().top;
-      if(Math.abs(delta)<.5&&previous!==undefined)return;
-      const animation=row.animate([
-        {transform:'translateY('+delta+'px)',opacity:previous===undefined?0:1},
-        {transform:'translateY(0)',opacity:1}
-      ],{duration:260,easing:'cubic-bezier(.22,.61,.36,1)',delay:previous===undefined?Math.min(index*13,100):0});
-      rowAnimations.add(animation);
-      animation.finished.catch(()=>{}).finally(()=>rowAnimations.delete(animation));
-    });
-  }
+
 }
 function resetSearch(){
   state.query='';search.value='';renderRanking();search.focus({preventScroll:true});
 }
 async function loadPlayers(provided){
+  if(!hasRanking)return;
   setFiltersEnabled(false);$('#ranking').setAttribute('aria-busy','true');
   tableWrap.hidden=true;
   panelMessage(rankingMessage,'Загружаем рейтинг…');
@@ -118,31 +102,18 @@ async function loadPlayers(provided){
     const updated=$('#ranking-updated');
     updated.dateTime=payload.updatedAt;
     updated.textContent=formatDate(payload.updatedAt,{day:'numeric',month:'long',year:'numeric'});
-    showPlayerTotal();setFiltersEnabled(true);renderRanking();
+    livePlayers=JSON.stringify(payload);setFiltersEnabled(true);renderRanking();
   }catch(error){
     console.warn('Arena rating unavailable:',error);
     summary.textContent='Рейтинг временно недоступен';
-    $('#players-total').textContent='—';
     panelMessage(rankingMessage,'Не удалось загрузить рейтинг. Попробуйте ещё раз.',loadPlayers,'Повторить',true);
   }finally{$('#ranking').setAttribute('aria-busy','false')}
 }
 
 function toggleDetails(button,panel){
   const opening=button.getAttribute('aria-expanded')!=='true';
-  const from=panel.hidden?0:panel.getBoundingClientRect().height;
-  detailAnimations.get(panel)?.cancel();
   button.setAttribute('aria-expanded',String(opening));
-  panel.hidden=false;
-  if(motion.matches){panel.hidden=!opening;detailAnimations.delete(panel);return}
-  const animation=panel.animate([
-    {height:from+'px',opacity:from?1:0},
-    {height:(opening?panel.scrollHeight:0)+'px',opacity:opening?1:0}
-  ],{duration:260,easing:'cubic-bezier(.22,.61,.36,1)',fill:'both'});
-  detailAnimations.set(panel,animation);
-  animation.finished.then(()=>{
-    if(detailAnimations.get(panel)!==animation)return;
-    panel.hidden=!opening;animation.cancel();detailAnimations.delete(panel);
-  }).catch(()=>{});
+  panel.hidden=!opening;
 }
 function openImage(tournament,url,caption,trigger){
   returnFocus=trigger;
@@ -183,7 +154,7 @@ function tournamentCard(tournament,zone){
   const body=element('div','tournament-body'),dateLine=element('div','tournament-date');
   const when=element('time','',date);when.dateTime=tournament.startsAt;
   dateLine.append(when,element('span','',time));
-  const title=element('h3','',tournament.title);title.id=titleId;
+  const title=element('h2','',tournament.title);title.id=titleId;
   body.append(dateLine,title,element('p','tournament-description',tournament.description));
   if(tournament.details.length){
     const button=element('button','details-toggle','О турнире');button.type='button';
@@ -195,6 +166,7 @@ function tournamentCard(tournament,zone){
     panel.append(dl);body.append(button,panel);
     button.addEventListener('click',()=>toggleDetails(button,panel));
   }
+  const signup=element('a','btn tournament-signup','Записаться');const arrow=element('span','arrow-icon');arrow.setAttribute('aria-hidden','true');signup.append(arrow);signup.href='https://t.me/asushedulebot';signup.setAttribute('aria-label','Записаться на турнир '+tournament.title);body.append(signup);
   card.append(media,body);
   return card;
 }
@@ -205,45 +177,43 @@ function zoneName(zone,at){
   return names[zone]?names[zone]+' · '+offset:offset;
 }
 async function loadTournaments(provided){
+  if(!hasTournaments)return;
   $('#tournaments').setAttribute('aria-busy','true');
   panelMessage(tournamentsMessage,'Загружаем расписание…');
   const grid=$('#tournaments-grid');grid.replaceChildren();
   try{
     const payload=provided?.tournaments?provided:await arenaDataSource.getTournaments();
-    tournamentPayload=payload;
+    tournamentPayload=payload;liveTournaments=JSON.stringify(payload);
     const tournaments=activeTournaments(payload.tournaments);
     activeTournamentIds=tournaments.map(t=>t.id).join('|');
-    $('#tournaments-total').textContent=numbers.format(tournaments.length);
-    $('#tournaments-total').nextElementSibling.textContent=word(tournaments.length,['турнир','турнира','турниров'])+' сейчас в арене';
     $('#tournament-timezone').textContent=zoneName(payload.timeZone,payload.updatedAt);
     if(!tournaments.length){panelMessage(tournamentsMessage,'Новые турниры скоро появятся.');return}
     grid.replaceChildren(...tournaments.map(tournament=>tournamentCard(tournament,payload.timeZone)));
     tournamentsMessage.hidden=true;reveal();
   }catch(error){
     console.warn('Arena tournaments unavailable:',error);
-    $('#tournaments-total').textContent='—';
     panelMessage(tournamentsMessage,'Не удалось загрузить расписание. Попробуйте ещё раз.',loadTournaments,'Повторить',true);
   }finally{$('#tournaments').setAttribute('aria-busy','false')}
 }
 
-$('#ranking-filters').addEventListener('submit',event=>event.preventDefault());
-search.addEventListener('input',()=>{state.query=search.value;renderRanking()});
-clear.addEventListener('click',resetSearch);
-sort.addEventListener('change',()=>{state.sortBy=sort.value;state.direction='desc';renderRanking()});
-direction.addEventListener('click',()=>{state.direction=state.direction==='desc'?'asc':'desc';renderRanking()});
+$('#ranking-filters')?.addEventListener('submit',event=>event.preventDefault());
+search?.addEventListener('input',()=>{state.query=search.value;renderRanking()});
+clear?.addEventListener('click',resetSearch);
+sort?.addEventListener('change',()=>{state.sortBy=sort.value;state.direction='desc';renderRanking()});
+direction?.addEventListener('click',()=>{state.direction=state.direction==='desc'?'asc':'desc';renderRanking()});
 document.querySelectorAll('[data-column-sort]').forEach(button=>button.addEventListener('click',()=>{
   const field=button.dataset.columnSort;
   if(state.sortBy===field)state.direction=state.direction==='desc'?'asc':'desc';
   else{state.sortBy=field;state.direction='desc'}
   renderRanking();
 }));
-$('#close-viewer').addEventListener('click',()=>viewer.close());
-viewer.addEventListener('click',event=>{
+$('#close-viewer')?.addEventListener('click',()=>viewer.close());
+viewer?.addEventListener('click',event=>{
   if(event.target!==viewer)return;
   const rect=viewer.getBoundingClientRect();
   if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)viewer.close();
 });
-viewer.addEventListener('keydown',event=>{
+viewer?.addEventListener('keydown',event=>{
   if(event.key!=='Tab')return;
   const controls=[...viewer.querySelectorAll('button:not([disabled]),[href],[tabindex]:not([tabindex="-1"])')]
     .filter(node=>node.getClientRects().length);
@@ -252,28 +222,19 @@ viewer.addEventListener('keydown',event=>{
   if(event.shiftKey&&(active===first||!viewer.contains(active))){event.preventDefault();last.focus()}
   else if(!event.shiftKey&&(active===last||!viewer.contains(active))){event.preventDefault();first.focus()}
 });
-viewer.addEventListener('close',()=>{
+viewer?.addEventListener('close',()=>{
   document.body.classList.remove('image-open');
   viewerImage.onerror=null;viewerImage.removeAttribute('src');
   if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});
   returnFocus=null;
 });
-motion.addEventListener('change',()=>{
-  if(motion.matches){
-    for(const animation of rowAnimations)animation.cancel();rowAnimations.clear();
-    for(const [panel,animation] of detailAnimations){animation.cancel();panel.hidden=panel.previousElementSibling.getAttribute('aria-expanded')!=='true'}
-    detailAnimations.clear();
-  }
-  reveal();
-});
+
 reveal();
 void loadPlayers();
 void loadTournaments();
 
-let liveRevision, liveBusy=false, livePlayers, liveTournaments;
 function refreshTournamentClock(){
  if(tournamentPayload&&activeTournaments(tournamentPayload.tournaments).map(t=>t.id).join('|')!==activeTournamentIds)void loadTournaments(tournamentPayload);
 }
 async function refreshLive(){if(document.hidden||liveBusy)return;liveBusy=true;try{const s=await arenaDataSource.getSnapshot();if(!s||s.revision===liveRevision){refreshTournamentClock();return}const expanded=[...document.querySelectorAll('.details-toggle[aria-expanded="true"]')].map(n=>n.closest('[data-tournament-id]').dataset.tournamentId);const playersKey=JSON.stringify(s.players),tournamentsKey=JSON.stringify(s.tournaments);await Promise.all([playersKey!==livePlayers?loadPlayers(s.players):null,tournamentsKey!==liveTournaments?loadTournaments(s.tournaments):null]);livePlayers=playersKey;liveTournaments=tournamentsKey;for(const id of expanded){const card=[...document.querySelectorAll('[data-tournament-id]')].find(n=>n.dataset.tournamentId===id);if(card?.querySelector('.details-toggle')){card.querySelector('.details-toggle').setAttribute('aria-expanded','true');card.querySelector('.details-content').hidden=false}}liveRevision=s.revision}catch{refreshTournamentClock();/* Keep the last successfully rendered data during a network interruption. */}finally{liveBusy=false}}
 setInterval(refreshLive,4000);window.addEventListener('focus',refreshLive);document.addEventListener('visibilitychange',refreshLive);if('BroadcastChannel'in window)new BroadcastChannel('blaind-arena').onmessage=refreshLive;
-void refreshLive();

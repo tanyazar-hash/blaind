@@ -61,7 +61,7 @@ const {chromium}=require('playwright');
     if(response.url().endsWith('.woff2'))fonts.push(response.url());
    });
   });
-  const pages=['','arena/','atmosphere/',...(await readdir(resolve(root,'legal'))).filter(n=>n.endsWith('.html')).map(n=>'legal/'+n)];
+  const pages=['','arena/','tournaments/','about/','rental/','atmosphere/',...(await readdir(resolve(root,'legal'))).filter(n=>n.endsWith('.html')).map(n=>'legal/'+n)];
   for(const width of [1440,390]){
    for(const path of pages){
     const page=await context.newPage();await page.setViewportSize({width,height:900});
@@ -89,7 +89,7 @@ const {chromium}=require('playwright');
     await page.close();
    }
   }
-  for(const path of ['arena','atmosphere','legal','admin']){
+  for(const path of ['arena','tournaments','about','rental','atmosphere','legal','admin']){
    const response=await context.request.get(origin+base+path,{maxRedirects:0});assert.equal(response.status(),301,'directory redirect '+path);
   }
   if(staticHosting){

@@ -8,6 +8,18 @@
     {
       "source": "/admin",
       "destination": "/admin/index.html"
+    },
+    {
+      "source": "/tournaments",
+      "destination": "/tournaments/index.html"
+    },
+    {
+      "source": "/about",
+      "destination": "/about/index.html"
+    },
+    {
+      "source": "/rental",
+      "destination": "/rental/index.html"
     }
   ],
   "buildCommand": "npm run build",
