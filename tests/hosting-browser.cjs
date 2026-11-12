@@ -39,6 +39,12 @@ const {chromium}=require('playwright');
  const errors=[],bad=[],supabaseCalls=[],models=[],fonts=[];
  try{
   const context=await browser.newContext({reducedMotion:'reduce'});
+  // Exercise both width-based LODs even on 2/4-core CI runners. The production
+  // low-resource fallback intentionally selects the mobile LOD at every width.
+  await context.addInitScript(()=>{
+   Object.defineProperty(navigator,'hardwareConcurrency',{get:()=>8});
+   Object.defineProperty(navigator,'deviceMemory',{get:()=>8});
+  });
   // Deterministic upstream fixture; real service availability is checked separately.
   await context.route('https://*.supabase.co/rest/v1/arena_documents?**',async route=>{
    const req=route.request();supabaseCalls.push(req);
@@ -100,4 +106,4 @@ const {chromium}=require('playwright');
   assert.deepEqual(errors,[]);assert.deepEqual(bad,[]);
   console.log(`PASS built ${base}: all public/legal pages and reloads, internal links, desktop/mobile GLBs, fonts, photos, responsive layout, ${staticHosting?'live Supabase contract, failure state and hosted admin navigation':'same-origin API'}. Upstream responses used deterministic fixtures.`);
  }finally{await browser.close();await new Promise(r=>server.close(r))}
-})().catch(error=>{console.error(error);process.exitCode=1});
+})().catch(error=>{console.error(error);if(process.env.GITHUB_ACTIONS)console.error('::error::'+String(error.stack||error).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));process.exitCode=1});

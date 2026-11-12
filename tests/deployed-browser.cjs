@@ -55,4 +55,4 @@ const {chromium}=require('playwright');
    await context.close();
   }
  }finally{await browser.close()}
-})().catch(error=>{console.error(error);process.exitCode=1});
+})().catch(error=>{console.error(error);if(process.env.GITHUB_ACTIONS)console.error('::error::'+String(error.stack||error).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));process.exitCode=1});
