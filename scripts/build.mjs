@@ -32,7 +32,7 @@ for(const name of ['index.html','design.css','experience.js','model.js',
 console.log('Static production output ready in public/. Server code and environment files are excluded.');
 
 // Bundle ESM once, share common chunks, and minify only generated output.
-await build({absWorkingDir:root,entryPoints:['experience.js','shared/site.js','arena/arena.js','atmosphere/atmosphere.js','admin/admin.js'],outdir:destination,outbase:root,bundle:true,splitting:true,format:'esm',target:['es2022'],minify:true,chunkNames:'assets/chunks/[name]-[hash]',legalComments:'external',define:{__SITE_BASE__:JSON.stringify(hosting.base),__STATIC_HOSTING__:JSON.stringify(hosting.staticHosting),__PUBLIC_SUPABASE_CONFIG__:JSON.stringify(publicConfig)},plugins:[{name:'web-root',setup(b){b.onResolve({filter:/^\/shared\//},args=>({path:resolve(root,'.'+args.path)}))}}]});
+await build({absWorkingDir:root,entryPoints:['experience.js','shared/site.js','arena/arena.js','admin/admin.js'],outdir:destination,outbase:root,bundle:true,splitting:true,format:'esm',target:['es2022'],minify:true,chunkNames:'assets/chunks/[name]-[hash]',legalComments:'external',define:{__SITE_BASE__:JSON.stringify(hosting.base),__STATIC_HOSTING__:JSON.stringify(hosting.staticHosting),__PUBLIC_SUPABASE_CONFIG__:JSON.stringify(publicConfig)},plugins:[{name:'web-root',setup(b){b.onResolve({filter:/^\/shared\//},args=>({path:resolve(root,'.'+args.path)}))}}]});
 async function prepareOutput(folder){
  for(const entry of await readdir(folder,{withFileTypes:true})){
   const path=join(folder,entry.name);
@@ -47,3 +47,9 @@ console.log('Browser bundles, shared chunks and minified styles ready.');
 if(hosting.staticHosting)await writeFile(join(destination,'admin/index.html'),adminRedirect(hosting.adminUrl,hosting.base));
 await writeFile(join(destination,'.nojekyll'),'');
 console.log(`Hosting: ${hosting.base} (${hosting.staticHosting?'static + Supabase public reads; hosted secure admin':'same-origin Node API'})`);
+
+// Old document links lead to the two short, current information pages.
+for(const [file,target] of Object.entries({'rules.html':'legal/#rules','terms.html':'legal/#booking','consents.html':'legal/privacy.html','sources.html':'legal/'})){
+ const url=hosting.base+target;
+ await writeFile(join(destination,'legal',file),`<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=${url}"><title>Информация клуба — БЛАИНД</title></head><body><h1>Информация клуба</h1><a href="${url}">Открыть актуальную информацию</a></body></html>`);
+}

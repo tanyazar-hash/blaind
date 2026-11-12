@@ -61,7 +61,7 @@ const {chromium}=require('playwright');
     if(response.url().endsWith('.woff2'))fonts.push(response.url());
    });
   });
-  const pages=['','arena/','tournaments/','about/','rental/','atmosphere/',...(await readdir(resolve(root,'legal'))).filter(n=>n.endsWith('.html')).map(n=>'legal/'+n)];
+  const pages=['','arena/','tournaments/','about/','rental/','legal/','legal/privacy.html'];
   for(const width of [1440,390]){
    for(const path of pages){
     const page=await context.newPage();await page.setViewportSize({width,height:900});
@@ -79,19 +79,15 @@ const {chromium}=require('playwright');
     }
     if(path==='')await page.locator('.model-loaded canvas').waitFor({state:'visible',timeout:60000});
     if(path==='arena/')await page.getByText('Hosting Live Player',{exact:true}).waitFor();
-    if(path==='atmosphere/'){
-     for(const image of await page.locator('.atm-frame img').all()){
-      await image.scrollIntoViewIfNeeded();await image.evaluate(img=>img.decode());
-     }
-     await page.locator('.atm-frame').first().click();await page.locator('#atm-viewer-image.is-loaded').waitFor();await page.keyboard.press('Escape');
-    }
     await page.reload();assert.equal(await page.locator('h1').count(),1,'reload '+path);
     await page.close();
    }
   }
-  for(const path of ['arena','tournaments','about','rental','atmosphere','legal','admin']){
+  for(const path of ['arena','tournaments','about','rental','legal','admin']){
    const response=await context.request.get(origin+base+path,{maxRedirects:0});assert.equal(response.status(),301,'directory redirect '+path);
   }
+  assert.equal((await context.request.get(origin+base+'atmosphere/')).status(),404,'removed gallery is not published');
+  for(const name of ['rules','terms','consents','sources']){const alias=await context.newPage();await alias.goto(origin+base+'legal/'+name+'.html');await alias.waitForURL(name==='consents'?origin+base+'legal/privacy.html':origin+base+'legal/'+(name==='rules'?'#rules':name==='terms'?'#booking':''));await alias.close()}
   if(staticHosting){
    const page=await context.newPage();await page.goto(origin+base+'admin/');await page.waitForURL(adminUrl);await page.getByRole('heading',{name:'Hosted secure administration'}).waitFor();await page.close();
    assert.equal(apiCalls.length,0,'static site must never request server functions');

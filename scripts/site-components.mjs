@@ -5,7 +5,7 @@ export async function syncSiteComponents(){
  const legalLinks=await readFile(resolve(root,'shared/legal-links.html'),'utf8');
  const documents=(await readdir(resolve(root,'legal'))).filter(name=>name.endsWith('.html')).map(name=>['legal','legal/'+name]);
  const templates=await Promise.all(['header','footer'].map(name=>readFile(resolve(root,'shared/'+name+'.html'),'utf8')));
- for(const [page,path]of[['home','index.html'],['arena','arena/index.html'],['about','atmosphere/index.html'],['tournaments','tournaments/index.html'],['about','about/index.html'],['rental','rental/index.html'],...documents]){
+ for(const [page,path]of[['home','index.html'],['arena','arena/index.html'],['tournaments','tournaments/index.html'],['about','about/index.html'],['rental','rental/index.html'],...documents]){
   const file=resolve(root,path);let html=await readFile(file,'utf8');
   for(const [i,name]of['header','footer'].entries()){
    const rendered=templates[i].replace('{{legal_links}}',legalLinks.trim()).replace(/\{\{(home|arena|atmosphere|tournaments|about|rental)_current\}\}/g,(_,value)=>value===page?'aria-current="page"':'');

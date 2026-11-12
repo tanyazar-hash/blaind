@@ -21,14 +21,14 @@ const {chromium}=require('playwright');
     if(new URL(page.url()).hostname==='vercel.com'&&new URL(page.url()).pathname.startsWith('/login'))throw new Error('Vercel Deployment Protection requires SSO before the application loads. Make the configured production URL public in Vercel Project Settings > Deployment Protection, or configure a public production domain. Keep the application Supabase Auth and RLS enabled.');
     current=await page.locator('.site-nav a').evaluateAll((links,arena)=>links.some(a=>new URL(a.href).pathname===arena),base.pathname+'arena/');
     // The polished home must expose its keyboard entry, not an older cached build.
-    current=current&&await page.locator('a.site-skip[href="#main-content"]').count()===1&&await page.locator('.direction-card').count()===4;
+    current=current&&await page.locator('a.site-skip[href="#main-content"]').count()===1&&await page.locator('.direction-card').count()===4&&await page.locator('.legal-links a').count()===2;
     if(current)break;
     await page.waitForTimeout(5000);
    }
    assert.ok(current,'deployment has not served the current build: '+base.href);
    for(const width of [1440,390]){
     await page.setViewportSize({width,height:900});
-    for(const path of ['','arena/','tournaments/','about/','rental/','atmosphere/','legal/','legal/privacy.html','legal/rules.html','legal/terms.html','legal/consents.html','legal/sources.html']){
+    for(const path of ['','arena/','tournaments/','about/','rental/','legal/','legal/privacy.html']){
      const url=new URL(path,base).href,response=await page.goto(url);
      assert.equal(response.status(),200,url);await page.evaluate(()=>document.fonts.ready);
      assert.equal(await page.locator('h1').count(),1,url);
@@ -43,10 +43,6 @@ const {chromium}=require('playwright');
      if(path==='arena/'){
       await page.locator('#ranking-body tr').first().waitFor();
       assert.equal(await page.locator('#ranking-message').isVisible(),false,'live Supabase rating: '+url);
-     }
-     if(path==='atmosphere/'){
-      for(const image of await page.locator('.atm-frame img').all()){await image.scrollIntoViewIfNeeded();await image.evaluate(img=>img.decode())}
-      await page.locator('.atm-frame').first().click();await page.locator('#atm-viewer-image.is-loaded').waitFor();await page.keyboard.press('Escape');
      }
      const reloaded=await page.reload();assert.equal(reloaded.status(),200,'reload '+url);
     }

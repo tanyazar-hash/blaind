@@ -39,7 +39,7 @@ jobs:
         env:
           PLAYWRIGHT_BUNDLED_CHROMIUM: '1'
       - name: Keyboard, motion, WebGL recovery and admin regression checks
-        run: node tests/polish-browser.cjs
+        run: node tests/polish-browser.cjs && node tests/legal-browser.cjs
         env:
           PLAYWRIGHT_BUNDLED_CHROMIUM: '1'
       - name: Accessibility regression checks
