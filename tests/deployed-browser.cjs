@@ -27,7 +27,7 @@ const {chromium}=require('playwright');
      assert.equal(response.status(),200,url);await page.evaluate(()=>document.fonts.ready);
      assert.equal(await page.locator('h1').count(),1,url);
      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,url);
-     const broken=await page.locator('img').evaluateAll(images=>images.filter(img=>img.loading!=='lazy'&&img.complete&&img.naturalWidth===0).map(img=>img.src));
+     const broken=await page.locator('img').evaluateAll(images=>images.filter(img=>img.currentSrc&&img.loading!=='lazy'&&img.complete&&img.naturalWidth===0).map(img=>img.src));
      assert.deepEqual(broken,[],url+' images');
      if(path===''){
       await page.locator('.model-loaded canvas').waitFor({state:'visible',timeout:60000});

@@ -68,6 +68,8 @@ const {chromium}=require('playwright');
     const response=await page.goto(origin+base+path);assert.equal(response.status(),200,path);
     await page.evaluate(()=>document.fonts.ready);
     assert.equal(await page.locator('h1').count(),1,path);
+    const broken=await page.locator('img').evaluateAll(images=>images.filter(img=>img.currentSrc&&img.loading!=='lazy'&&img.complete&&img.naturalWidth===0).map(img=>img.src));
+    assert.deepEqual(broken,[],path+' loaded images');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,path+' overflow');
     const links=await page.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.href));
     for(const link of links){
