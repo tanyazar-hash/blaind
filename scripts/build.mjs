@@ -26,7 +26,7 @@ await syncSiteComponents();
 const destination=join(root,'public');
 await rm(destination,{recursive:true,force:true});await mkdir(destination);
 for(const name of ['index.html','design.css','experience.js','model.js',
-  'assets','vendor','arena','admin','atmosphere','shared','legal','tournaments','about','rental',...Array.from({length:7},(_,i)=>'atm'+(i+1)+'.jpg')]){
+  'assets','vendor','arena','admin','atmosphere','shared','legal','tournaments','rental',...Array.from({length:7},(_,i)=>'atm'+(i+1)+'.jpg')]){
   await cp(join(root,name),join(destination,name),{recursive:true,filter:path=>!excluded(path.split('/').at(-1))});
 }
 console.log('Static production output ready in public/. Server code and environment files are excluded.');

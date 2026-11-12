@@ -61,7 +61,7 @@ const {chromium}=require('playwright');
     if(response.url().endsWith('.woff2'))fonts.push(response.url());
    });
   });
-  const pages=['','arena/','tournaments/','about/','rental/','legal/','legal/privacy.html'];
+  const pages=['','arena/','tournaments/','rental/','legal/','legal/privacy.html'];
   for(const width of [1440,390]){
    for(const path of pages){
     const page=await context.newPage();await page.setViewportSize({width,height:900});
@@ -83,10 +83,11 @@ const {chromium}=require('playwright');
     await page.close();
    }
   }
-  for(const path of ['arena','tournaments','about','rental','legal','admin']){
+  for(const path of ['arena','tournaments','rental','legal','admin']){
    const response=await context.request.get(origin+base+path,{maxRedirects:0});assert.equal(response.status(),301,'directory redirect '+path);
   }
   assert.equal((await context.request.get(origin+base+'atmosphere/')).status(),404,'removed gallery is not published');
+  assert.equal((await context.request.get(origin+base+'about/')).status(),404,'removed About page is not published');
   for(const name of ['rules','terms','consents','sources']){const alias=await context.newPage();await alias.goto(origin+base+'legal/'+name+'.html');await alias.waitForURL(name==='consents'?origin+base+'legal/privacy.html':origin+base+'legal/'+(name==='rules'?'#rules':name==='terms'?'#booking':''));await alias.close()}
   if(staticHosting){
    const page=await context.newPage();await page.goto(origin+base+'admin/');await page.waitForURL(adminUrl);await page.getByRole('heading',{name:'Hosted secure administration'}).waitFor();await page.close();

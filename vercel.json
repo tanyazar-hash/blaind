@@ -14,10 +14,6 @@
       "destination": "/tournaments/index.html"
     },
     {
-      "source": "/about",
-      "destination": "/about/index.html"
-    },
-    {
       "source": "/rental",
       "destination": "/rental/index.html"
     }

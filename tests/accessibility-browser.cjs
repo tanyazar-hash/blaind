@@ -20,7 +20,7 @@ const AxeBuilder=require('@axe-core/playwright').default;
   for(const width of [1440,390]){
    const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce'});
    context.on('page',page=>page.on('pageerror',e=>errors.push(e.message)));
-   for(const path of ['/','/arena/','/tournaments/','/about/','/rental/','/legal/','/legal/privacy.html','/admin/']){
+   for(const path of ['/','/arena/','/tournaments/','/rental/','/legal/','/legal/privacy.html','/admin/']){
     const page=await context.newPage();await page.goto(base+path);await page.evaluate(()=>document.fonts.ready);
     if(path==='/arena/')await page.locator('#ranking-body tr').first().waitFor();
     await check(page,path+' at '+width+'px');
