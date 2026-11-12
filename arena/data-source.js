@@ -1,3 +1,4 @@
+import {sitePath,staticHosting} from '../shared/paths.js';
 /** @typedef {import('./types').ArenaDataSource} ArenaDataSource */
 /** @typedef {import('./types').PlayersResponse} PlayersResponse */
 /** @typedef {import('./types').TournamentsResponse} TournamentsResponse */
@@ -46,10 +47,10 @@ export function validateTournaments(value) {
  * @param {string|null} value @param {string|URL} [base]
  * @returns {string|null}
  */
-export function resolveImageUrl(value,base=import.meta.url) {
+export function resolveImageUrl(value,base=typeof location==='object'?new URL(sitePath('arena/'),location.origin):import.meta.url) {
   if(!value?.trim())return null;
   try{
-    const url=new URL(value,base);
+    const url=new URL(/^\/(?!\/)/.test(value)?sitePath(value):value,base);
     return ['https:','http:'].includes(url.protocol) ? url.href : null;
   }catch{return null}
 }
@@ -59,8 +60,8 @@ export function resolveImageUrl(value,base=import.meta.url) {
  * @returns {ArenaDataSource}
  */
 export function createArenaDataSource({
-  playersUrl=new URL('./data/players.json',import.meta.url),
-  tournamentsUrl=new URL('./data/tournaments.json',import.meta.url),
+  playersUrl=sitePath('arena/data/players.json'),
+  tournamentsUrl=sitePath('arena/data/tournaments.json'),
   fetchImpl=globalThis.fetch
 }={}) {
   async function get(url,validate,signal) {
@@ -80,7 +81,8 @@ async function snapshot(){
  if(inflight)return inflight;
  inflight=(async()=>{
   if(staticOnly)return null;
-  const response=await fetch('/api/arena',{cache:'no-store',signal:AbortSignal.timeout(12000)});
+  if(staticHosting)return (await import('./static-source.js')).staticSnapshot();
+  const response=await fetch(sitePath('api/arena'),{cache:'no-store',signal:AbortSignal.timeout(12000)});
   if(response.status===404){staticOnly=true;return null}
   if(!response.ok)throw new Error('Arena request failed: '+response.status);
   return response.json();

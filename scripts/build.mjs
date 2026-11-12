@@ -1,9 +1,13 @@
+import {hostingConfig,prefixHtml,prefixCss,adminRedirect} from './hosting.mjs';
+import {supabaseConfig} from '../server/config.js';
 import {syncSiteComponents} from './site-components.mjs';
 import {cp,mkdir,rm,readdir,readFile,writeFile} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 import {build,transform} from 'esbuild';
 import {execFileSync} from 'node:child_process';
 const root=resolve(import.meta.dirname,'..');
+const hosting=hostingConfig();
+const publicConfig=supabaseConfig(process.env);
 const excluded=name=>/^(tests|node_modules)$/.test(name)||(/\.(md|py|d\.ts|test\.mjs|cjs)$/.test(name)&&!/^LICENSE\.md$/i.test(name));
 for(const dir of ['api','server','admin','arena','atmosphere','shared']){
   async function check(folder){
@@ -28,13 +32,18 @@ for(const name of ['index.html','design.css','experience.js','model.js',
 console.log('Static production output ready in public/. Server code and environment files are excluded.');
 
 // Bundle ESM once, share common chunks, and minify only generated output.
-await build({absWorkingDir:root,entryPoints:['experience.js','shared/site.js','arena/arena.js','atmosphere/atmosphere.js','admin/admin.js'],outdir:destination,outbase:root,bundle:true,splitting:true,format:'esm',target:['es2022'],minify:true,chunkNames:'assets/chunks/[name]-[hash]',legalComments:'external',plugins:[{name:'web-root',setup(b){b.onResolve({filter:/^\/shared\//},args=>({path:resolve(root,'.'+args.path)}))}}]});
-async function minifyStyles(folder){
+await build({absWorkingDir:root,entryPoints:['experience.js','shared/site.js','arena/arena.js','atmosphere/atmosphere.js','admin/admin.js'],outdir:destination,outbase:root,bundle:true,splitting:true,format:'esm',target:['es2022'],minify:true,chunkNames:'assets/chunks/[name]-[hash]',legalComments:'external',define:{__SITE_BASE__:JSON.stringify(hosting.base),__STATIC_HOSTING__:JSON.stringify(hosting.staticHosting),__PUBLIC_SUPABASE_CONFIG__:JSON.stringify(publicConfig)},plugins:[{name:'web-root',setup(b){b.onResolve({filter:/^\/shared\//},args=>({path:resolve(root,'.'+args.path)}))}}]});
+async function prepareOutput(folder){
  for(const entry of await readdir(folder,{withFileTypes:true})){
   const path=join(folder,entry.name);
-  if(entry.isDirectory())await minifyStyles(path);
-  else if(entry.name.endsWith('.css'))await writeFile(path,(await transform(await readFile(path,'utf8'),{loader:'css',minify:true,target:'es2022'})).code);
+  if(entry.isDirectory())await prepareOutput(path);
+  else if(entry.name.endsWith('.html'))await writeFile(path,prefixHtml(await readFile(path,'utf8'),hosting.base));
+  else if(entry.name.endsWith('.css'))await writeFile(path,(await transform(prefixCss(await readFile(path,'utf8'),hosting.base),{loader:'css',minify:true,target:'es2022'})).code);
  }
 }
-await minifyStyles(destination);
+await prepareOutput(destination);
 console.log('Browser bundles, shared chunks and minified styles ready.');
+
+if(hosting.staticHosting)await writeFile(join(destination,'admin/index.html'),adminRedirect(hosting.adminUrl,hosting.base));
+await writeFile(join(destination,'.nojekyll'),'');
+console.log(`Hosting: ${hosting.base} (${hosting.staticHosting?'static + Supabase public reads; hosted secure admin':'same-origin Node API'})`);

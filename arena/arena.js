@@ -1,4 +1,5 @@
-import {revealContent as reveal,clubText} from '/shared/site.js';
+import {sitePath} from '../shared/paths.js';
+import {revealContent as reveal,clubText} from '../shared/site.js';
 import {activeTournaments} from './tournaments.js';
 import {arenaDataSource,resolveImageUrl} from './data-source.js';
 import {rankPlayers,selectPlayers} from './ranking.js';
@@ -161,7 +162,7 @@ function tournamentCard(tournament,zone){
   card.setAttribute('aria-labelledby',titleId);
   const media=element('button','poster-trigger');media.type='button';media.disabled=true;
   const placeholder=element('div','poster-placeholder');placeholder.setAttribute('aria-hidden','true');
-  const brand=element('img');brand.src='/assets/club-logo.svg';brand.alt='';brand.width=600;brand.height=300;
+  const brand=element('img');brand.src=sitePath('assets/club-logo.svg');brand.alt='';brand.width=600;brand.height=300;
   placeholder.append(brand,element('span','','БЛАИНД / ТУРНИРЫ'));
   const zoom=element('span','poster-zoom');zoom.setAttribute('aria-hidden','true');zoom.append(element('span','arrow-icon'));
   media.append(placeholder,zoom);

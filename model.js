@@ -1,3 +1,4 @@
+import {sitePath} from './shared/paths.js';
 import * as THREE from './vendor/three/three.module.js';
 import { GLTFLoader } from './vendor/three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from './vendor/three/addons/environments/RoomEnvironment.js';
@@ -39,7 +40,7 @@ export async function createChip(container, onContextLost) {
   fill.position.set(2, -3, 4); scene.add(fill);
   let root;
   try {
-    root = (await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(mobile?models.mobile:models.desktop)).scene;
+    root = (await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(sitePath(mobile?models.mobile:models.desktop))).scene;
   } catch (error) {
     environment.dispose(); renderer.dispose();
     throw error;
@@ -54,7 +55,7 @@ export async function createChip(container, onContextLost) {
   pivot.add(normalized); scene.add(pivot);
 
   // The same reference-based Cyrillic logo is used in the header and on the GLB.
-  const texture = await new THREE.TextureLoader().loadAsync('./assets/club-logo.svg');
+  const texture = await new THREE.TextureLoader().loadAsync(sitePath('assets/club-logo.svg'));
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = Math.min(4,renderer.capabilities.getMaxAnisotropy());
   const material = new THREE.MeshStandardMaterial({

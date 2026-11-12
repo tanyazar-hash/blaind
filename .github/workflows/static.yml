@@ -1,52 +1,63 @@
-# Simple workflow for deploying static content to GitHub Pages
 name: Deploy static content to Pages
 
 on:
-  # Runs on pushes targeting the default branch
   push:
-    branches: ["main"]
-
-  # Allows you to run this workflow manually from the Actions tab
+    branches: [main]
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Build public files
+      - name: Build root deployment for unit tests
         run: npm run build
+      - name: Unit and database tests
+        run: npm test
       - name: Setup Pages
+        id: pages
         uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Build for the actual Pages base path
+        run: npm run build
+        env:
+          SITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+          STATIC_HOSTING: '1'
+          HOSTED_ADMIN_URL: https://blaind-tanyazar-hashs-projects.vercel.app/admin/
+      - name: Install Chromium for hosting smoke tests
+        run: npx playwright install --with-deps chromium
+      - name: Test the built site using a plain static server
+        run: node tests/hosting-browser.cjs
+        env:
+          SITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+          STATIC_HOSTING: '1'
+          PLAYWRIGHT_BUNDLED_CHROMIUM: '1'
+      - uses: actions/upload-pages-artifact@v3
         with:
-          # Server functions run on Vercel only; publish public files here.
-          path: 'public'
+          path: public
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+      - name: Verify the published Pages and Vercel sites (read-only)
+        run: node tests/deployed-browser.cjs
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+          VERCEL_URL: https://blaind-tanyazar-hashs-projects.vercel.app/
+          PLAYWRIGHT_BUNDLED_CHROMIUM: '1'

@@ -24,7 +24,7 @@ const {chromium}=require('playwright');
      await p.locator('.model-loaded canvas').waitFor({state:'visible'});
      const model=await p.locator('.object-position').boundingBox(),copy=await p.locator('.hero-content').boundingBox();assert.ok(width>600||model.y+model.height<copy.y,'mobile hero chip avoids copy');
      await p.locator('#events').scrollIntoViewIfNeeded();for(const summary of await p.locator('details.event summary').all()){await summary.click();assert.equal(await summary.getAttribute('aria-expanded'),'true');assert.equal(await summary.locator('..').locator('p').isVisible(),true);await summary.click();assert.equal(await summary.getAttribute('aria-expanded'),'false')}
-     assert.equal(await p.locator('#about a[href="/atmosphere/"]').count(),1);assert.equal(await p.locator('#events a[href="/arena#tournaments"]').count(),1);
+     assert.equal(await p.locator('#about a[href="/atmosphere/"]').count(),1);assert.equal(await p.locator('#events a[href="/arena/#tournaments"]').count(),1);
     }
     await p.locator('.site-footer').scrollIntoViewIfNeeded();assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await p.close();
    }
