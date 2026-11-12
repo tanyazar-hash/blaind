@@ -5,9 +5,12 @@ const {chromium}=require('playwright');
  const pagesUrl=new URL(process.env.PAGES_URL);
  const vercelUrl=new URL(process.env.VERCEL_URL||'https://blaind-tanyazar-hashs-projects.vercel.app/');
  for(const url of [pagesUrl,vercelUrl])assert.equal(url.protocol,'https:');
+ const target=process.env.DEPLOY_TARGET||'all';
+ assert.ok(['all','pages','vercel'].includes(target),'DEPLOY_TARGET');
+ const sites=target==='pages'?[[pagesUrl,'pages']]:target==='vercel'?[[vercelUrl,'vercel']]:[[pagesUrl,'pages'],[vercelUrl,'vercel']];
  const browser=await chromium.launch({...(process.env.PLAYWRIGHT_BUNDLED_CHROMIUM==='1'?{}:{executablePath:'/usr/bin/chromium'}),args:['--no-sandbox','--enable-unsafe-swiftshader']});
  try{
-  for(const base of [pagesUrl,vercelUrl]){
+  for(const [base,kind] of sites){
    if(!base.pathname.endsWith('/'))base.pathname+='/';
    const context=await browser.newContext({reducedMotion:'reduce'}),page=await context.newPage(),errors=[];
    page.on('pageerror',e=>errors.push(e.message));
@@ -15,6 +18,7 @@ const {chromium}=require('playwright');
    let current=false;
    for(let attempt=0;attempt<12;attempt++){
     await page.goto(base.href,{waitUntil:'networkidle'});
+    if(new URL(page.url()).hostname==='vercel.com'&&new URL(page.url()).pathname.startsWith('/login'))throw new Error('Vercel Deployment Protection requires SSO before the application loads. Make the configured production URL public in Vercel Project Settings > Deployment Protection, or configure a public production domain. Keep the application Supabase Auth and RLS enabled.');
     current=await page.locator('.site-nav a').evaluateAll((links,arena)=>links.some(a=>new URL(a.href).pathname===arena),base.pathname+'arena/');
     if(current)break;
     await page.waitForTimeout(5000);
@@ -45,13 +49,21 @@ const {chromium}=require('playwright');
      const reloaded=await page.reload();assert.equal(reloaded.status(),200,'reload '+url);
     }
    }
-   await page.goto(new URL('admin/',base).href);
-   await page.locator('#login-form [name=email]').waitFor();
-   assert.equal(new URL(page.url()).origin,vercelUrl.origin,'administration stays on the secure backend');
-   const session=await context.request.get(new URL('api/admin?resource=session',vercelUrl).href);
-   assert.equal(session.status(),200);assert.equal((await session.json()).authenticated,false);
+   if(kind==='pages'){
+    const redirect=await context.request.get(new URL('admin/',base).href);
+    assert.equal(redirect.status(),200);const html=await redirect.text();
+    assert.match(html,/http-equiv="refresh"/);assert.ok(html.includes(new URL('admin/',vercelUrl).href),'static admin redirects to the configured backend');
+    console.log('PASS deployed '+base.href+': all public/legal pages, reloads, desktop/mobile GLB, photos, fonts, live Supabase rating and admin redirect. Backend login is checked separately.');
+   }else{
+    await page.goto(new URL('admin/',base).href);
+    if(new URL(page.url()).hostname==='vercel.com')throw new Error('Vercel Deployment Protection blocks the admin entry. The configured backend must be publicly reachable before Supabase application login.');
+    await page.locator('#login-form [name=email]').waitFor();
+    assert.equal(new URL(page.url()).origin,vercelUrl.origin,'administration stays on the secure backend');
+    const session=await context.request.get(new URL('api/admin?resource=session',vercelUrl).href);
+    assert.equal(session.status(),200);assert.equal((await session.json()).authenticated,false);
+    console.log('PASS deployed '+base.href+': all public/legal pages, reloads, desktop/mobile GLB, photos, fonts, live rating and secure admin entry (no login or writes).');
+   }
    assert.deepEqual(errors,[]);
-   console.log('PASS deployed '+base.href+': all public/legal pages, reloads, desktop/mobile GLB, photos, fonts, live rating and secure admin entry (no login or writes).');
    await context.close();
   }
  }finally{await browser.close()}

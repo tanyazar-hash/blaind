@@ -55,9 +55,17 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
-      - name: Verify the published Pages and Vercel sites (read-only)
+      - name: Verify the published Pages site (read-only)
         run: node tests/deployed-browser.cjs
         env:
+          DEPLOY_TARGET: pages
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+          VERCEL_URL: https://blaind-tanyazar-hashs-projects.vercel.app/
+          PLAYWRIGHT_BUNDLED_CHROMIUM: '1'
+      - name: Verify the public Vercel site and protected application login (read-only)
+        run: node tests/deployed-browser.cjs
+        env:
+          DEPLOY_TARGET: vercel
           PAGES_URL: ${{ steps.deployment.outputs.page_url }}
           VERCEL_URL: https://blaind-tanyazar-hashs-projects.vercel.app/
           PLAYWRIGHT_BUNDLED_CHROMIUM: '1'
