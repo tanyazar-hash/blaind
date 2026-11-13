@@ -32,7 +32,7 @@ const {startSite,browserOptions}=require('./club-fixture.cjs');
      for(const link of await page.locator('.tournament-signup').all())assert.equal(await link.getAttribute('href'),'https://t.me/asushedulebot');
     }
     if(path==='/rental/'){
-     assert.equal(await page.locator('.rental-card').count(),2);assert.match(await page.locator('.rental-card').first().innerText(),/700 ₽/);assert.match(await page.locator('.rental-card').last().innerText(),/500 ₽ с человека/);
+     assert.equal(await page.locator('.rental-card').count(),2);assert.match(await page.locator('.rental-card').first().innerText(),/700 ₽ с человека/);assert.match(await page.locator('.rental-card').last().innerText(),/500 ₽ с человека/);
      for(const link of await page.locator('.rental-card .btn').all())assert.equal(await link.getAttribute('href'),'https://t.me/asushedulebot');
      assert.equal(await page.locator('.rental-card picture,.rental-card img').count(),0);assert.equal(await page.locator('.rental-body>p:not(.rental-price)').count(),0);assert.doesNotMatch(await page.locator('main').innerText(),/за час|₽\s*\/\s*час|предоплат/);
     }
