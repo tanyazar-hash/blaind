@@ -2,8 +2,9 @@ const assert=require('node:assert/strict');
 const {mkdtemp,rm,mkdir}=require('node:fs/promises');
 const {chromium}=require('playwright');
 (async()=>{
- const {pgStore}=await import('./pg-store.mjs'),{serve}=await import('../scripts/dev-server.mjs'),{createArenaBackend}=await import('../server/app.js'),{authFixture,testPassword}=await import('./auth-fixture.mjs');
+ const {pgStore}=await import('./pg-store.mjs'),{serve}=await import('../scripts/dev-server.mjs'),{createArenaBackend}=await import('../server/app.js'),{authFixture,testPassword,adminId}=await import('./auth-fixture.mjs');
  const dir=await mkdtemp('/tmp/blaind-browser-'),auth=authFixture(),store=await pgStore(dir,{identity:auth.identity}),password=testPassword;
+ const seeded=await store.readDocument();seeded.document.tournaments.forEach((t,i)=>{t.startsAt=new Date(Date.now()+(i+1)*86400000).toISOString();t.endsAt=null;t.status='scheduled'});await store.asUser(adminId).saveDocument(seeded.document,seeded.version);
  const server=serve({imageDirectory:dir+'/images',backend:createArenaBackend({store,auth,env:{NODE_ENV:'test'}})});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const base='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({...(process.env.PLAYWRIGHT_BUNDLED_CHROMIUM==='1'?{}:{executablePath:'/usr/bin/chromium'}),args:['--no-sandbox']});
  try{

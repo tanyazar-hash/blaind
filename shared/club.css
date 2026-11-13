@@ -42,3 +42,12 @@
 .rental-body h2{margin-bottom:28px}.rental-body .rental-price{margin-bottom:30px}.rental-body{padding:32px}.rental-grid .rental-card{min-height:220px}.rental-body .btn{min-height:50px}
 .concise-legal{max-width:960px!important}.concise-legal h1{font-size:clamp(36px,5vw,58px);margin:18px 0 24px}.concise-legal section{padding:26px 0}.concise-legal h2{font-size:26px;margin-bottom:14px}.concise-legal p{font-size:14px;line-height:1.9}.legal-footer .legal-links{gap:12px 24px}
 @media(max-width:700px){.about-story{grid-template-columns:1fr;gap:24px;margin-bottom:26px}.about-copy>p:not(.eyebrow){font-size:15px}.about-finale{display:flex;align-items:center;gap:20px;padding:0 0 0 18px}.about-finale>span{font-size:62px;margin:0;flex-shrink:0}.about-finale p{font-size:14px}.rental-body{padding:24px}.rental-body h2{margin-bottom:22px}.concise-legal p{font-size:14px}}
+
+/* The interactive model is desktop-only; hidden stages reserve no space. */
+.chip-stage{display:none;overflow:hidden;contain:layout paint;cursor:grab;user-select:none;touch-action:pan-y;pointer-events:auto;border-radius:24px}
+.chip-stage.is-dragging{cursor:grabbing}.chip-stage:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.simple-page .club-hero{grid-template-columns:minmax(0,1fr)}
+@media(min-width:1101px) and (hover:hover) and (pointer:fine){.simple-page .club-hero{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr)}.chip-stage{display:block}}
+@media(any-pointer:coarse){.chip-stage{display:none}.simple-page .club-hero{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:1100px){.club-hero-copy{max-width:680px}.simple-page .club-hero{padding-bottom:32px}.club-hero-copy>.btn{min-width:220px}}
+@media(max-width:700px){.club-hero-copy>.btn{width:100%}.simple-page .club-hero{padding-bottom:28px}.direction-card>span:nth-child(2){min-width:0}.direction-arrow{flex-shrink:0}.site-footer nav a,.legal-links a,.admin-entry{display:inline-flex;align-items:center;min-height:44px}.site-footer nav{gap:0 18px}.legal-footer .legal-links{gap:0 18px}}

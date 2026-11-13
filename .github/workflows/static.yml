@@ -46,6 +46,10 @@ jobs:
         run: npm run test:accessibility
         env:
           PLAYWRIGHT_BUNDLED_CHROMIUM: '1'
+      - name: Responsive layouts, mobile resource budget and slow-device performance
+        run: npm run test:performance && node tests/entrance-browser.cjs
+        env:
+          PLAYWRIGHT_BUNDLED_CHROMIUM: '1'
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5

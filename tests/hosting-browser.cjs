@@ -77,7 +77,7 @@ const {chromium}=require('playwright');
      assert.ok(url.pathname.startsWith(base),'link escapes prefix: '+link);
      const linked=await context.request.get(link);assert.equal(linked.status(),200,link);
     }
-    if(path==='')await page.locator('.model-loaded canvas').waitFor({state:'visible',timeout:60000});
+    if(path===''){if(width>1100)await page.locator('.model-loaded canvas').waitFor({state:'visible',timeout:60000});else assert.equal(await page.locator('canvas').count(),0);}
     if(path==='arena/')await page.getByText('Hosting Live Player',{exact:true}).waitFor();
     await page.reload();assert.equal(await page.locator('h1').count(),1,'reload '+path);
     await page.close();
@@ -99,10 +99,10 @@ const {chromium}=require('playwright');
    const page2=await context.newPage();await page2.goto(origin+base+'arena/');await page2.locator('#ranking-message').waitFor({state:'visible'});assert.equal(await page2.getByText('Hosting Live Player',{exact:true}).count(),0);await page2.close();
   }else assert.ok(apiCalls.length>0,'same-origin API must execute');
   assert.ok(models.some(url=>url.includes('chip-desktop-')),'desktop GLB');
-  assert.ok(models.some(url=>url.includes('chip-mobile-')),'mobile GLB');
+  assert.equal(models.some(url=>url.includes('chip-mobile-')),false,'mobile must not load a GLB');
   assert.ok(fonts.length>=3,'local WOFF2 fonts');
   const fallback=await context.newPage();await fallback.route('**/*.glb',route=>route.abort());await fallback.goto(origin+base);await fallback.locator('.fallback-visible .chip-fallback').waitFor({state:'visible'});await fallback.close();
   assert.deepEqual(errors,[]);assert.deepEqual(bad,[]);
-  console.log(`PASS built ${base}: all public/legal pages and reloads, internal links, desktop/mobile GLBs, fonts, photos, responsive layout, ${staticHosting?'live Supabase contract, failure state and hosted admin navigation':'same-origin API'}. Upstream responses used deterministic fixtures.`);
+  console.log(`PASS built ${base}: all public/legal pages and reloads, internal links, desktop GLB and mobile without 3D, fonts, photos, responsive layout, ${staticHosting?'live Supabase contract, failure state and hosted admin navigation':'same-origin API'}. Upstream responses used deterministic fixtures.`);
  }finally{await browser.close();await new Promise(r=>server.close(r))}
 })().catch(error=>{console.error(error);if(process.env.GITHUB_ACTIONS)console.error('::error::'+String(error.stack||error).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));process.exitCode=1});

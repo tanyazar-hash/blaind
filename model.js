@@ -93,6 +93,8 @@ export async function createChip(container, onContextLost) {
       THREE.MathUtils.degToRad(-pose.ry),
       THREE.MathUtils.degToRad(pose.rz)
     );
+    pivot.position.y = pose.y || 0;
+    canvas.dataset.pose = JSON.stringify(pose);
     renderer.render(scene, camera);
     canvas.dataset.triangles=String(renderer.info.render.triangles);
   }
@@ -114,7 +116,7 @@ export async function createChip(container, onContextLost) {
   resize();
   function reduceQuality(){
     if(pixelRatio<=.9)return;
-    pixelRatio=Math.max(.9,pixelRatio*.8);renderer.setPixelRatio(pixelRatio);draw();
+    pixelRatio=Math.max(.9,pixelRatio*.8);renderer.setPixelRatio(pixelRatio);
   }
   function dispose(){
     if(disposed)return;disposed=true;

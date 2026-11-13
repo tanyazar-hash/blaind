@@ -87,7 +87,7 @@ SITE_BASE_PATH=/blaind/ STATIC_HOSTING=1 node tests/hosting-browser.cjs
 Локально используется `/usr/bin/chromium`. CI устанавливает Chromium через Playwright
 и задаёт `PLAYWRIGHT_BUNDLED_CHROMIUM=1`. hosting-browser запускает файловый сервер
 без Vercel rewrites, проверяет все публичные/юридические страницы и reload, ссылки,
-desktop/mobile GLB, WOFF2, фотографии и переход к админке. Ответы Supabase в этом
+desktop GLB и отсутствие 3D-запросов на мобильных устройствах, WOFF2, фотографии и переход к админке. Ответы Supabase в этом
 тесте подставлены явно: это проверка контракта, а не доступности production.
 После публикации проверьте оба URL, актуальный рейтинг и вход в существующую
 админ-панель. Production не заполняется тестовыми данными.

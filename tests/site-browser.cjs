@@ -6,7 +6,7 @@ const {startSite,browserOptions}=require('./club-fixture.cjs');
  doc.players=Array.from({length:21},(_,i)=>({id:'p'+(i+1),nickname:'Player'+(i+1),points:2100-i*100,wins:i%6,tournamentsPlayed:20}));
  const site=await startSite(doc),browser=await chromium.launch(browserOptions),errors=[],bad=[];
  try{
-  for(const width of [320,390,600,768,1024,1440]){
+  for(const width of [320,360,390,430,600,768,1024,1100,1280,1440,1920]){
    const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce'});
    context.on('page',p=>{p.on('pageerror',e=>errors.push(e.message));p.on('response',r=>{if(r.url().startsWith(site.base)&&r.status()>=400)bad.push(r.status()+' '+r.url())})});
    const page=await context.newPage();
@@ -18,8 +18,8 @@ const {startSite,browserOptions}=require('./club-fixture.cjs');
     assert.equal(await page.locator('.legal-links a').count(),2);
     if(width<=1100){await page.locator('.menu').click();await page.keyboard.press('Tab');assert.equal(await page.locator('#site-mobile-nav').evaluate(n=>n.contains(document.activeElement)),true);await page.keyboard.press('Escape');assert.equal(await page.locator('.menu').evaluate(n=>n===document.activeElement),true)}
     if(path==='/'){
-     assert.equal(await page.locator('main>section').count(),2);assert.equal(await page.locator('.direction-card').count(),3);await page.locator('.model-loaded canvas').waitFor();
-     const copy=await page.locator('.club-hero-copy').boundingBox(),chip=await page.locator('.chip-stage').boundingBox();assert.ok(width<=700?copy.y+copy.height<=chip.y+1:copy.x+copy.width<=chip.x+1,'chip has its own non-overlapping space');
+     assert.equal(await page.locator('main>section').count(),2);assert.equal(await page.locator('.direction-card').count(),3);if(width>1100)await page.locator('.model-loaded canvas').waitFor();else assert.equal(await page.locator('canvas').count(),0);
+     const copy=await page.locator('.club-hero-copy').boundingBox(),chip=await page.locator('.chip-stage').boundingBox();if(width>1100)assert.ok(copy.x+copy.width<=chip.x+1,'chip has its own non-overlapping space');else assert.equal(chip,null,'no reserved mobile model space');
      assert.match(await page.locator('main').innerText(),/18 лучших игроков/);assert.match(await page.locator('main').innerText(),/Без денежных ставок/);
     }
     if(path==='/arena/'){
@@ -41,6 +41,6 @@ const {startSite,browserOptions}=require('./club-fixture.cjs');
    assert.equal((await context.request.get(site.base+'/about/')).status(),404);
    await page.goto(site.base+'/arena/#tournaments');await page.waitForURL(site.base+'/tournaments/');await context.close();
   }
-  assert.deepEqual(errors,[]);assert.deepEqual(bad,[]);console.log('PASS simple four-page journey, five-link navigation, 320–1440px, 18 official rating places across search/sort, separate live schedule, official signup/booking contacts, exact rental prices and legacy schedule link.');
+  assert.deepEqual(errors,[]);assert.deepEqual(bad,[]);console.log('PASS simple four-page journey, five-link navigation, 320–1920px, 18 official rating places across search/sort, separate live schedule, official signup/booking contacts, exact rental prices and legacy schedule link.');
  }finally{await browser.close();await site.close()}
 })().catch(e=>{console.error(e);if(process.env.GITHUB_ACTIONS)console.error('::error::'+String(e.stack||e).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));process.exitCode=1});
